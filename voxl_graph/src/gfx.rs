@@ -1,13 +1,12 @@
 use crate::{
-    cgmath::Point3,
     texture,
-    uniforms::{Camera, Uniforms},
+    uniforms::Uniforms,
     vertex::Vertex,
     wgpu::{util::DeviceExt, *},
 };
 
 use futures::executor::block_on;
-use winit::{dpi::PhysicalSize, window::Window};
+use winit::window::Window;
 
 pub struct GFX {
     surface: Surface,
@@ -74,13 +73,13 @@ pub const INDICES: &[u16] = &[
 ];
 
 pub struct Render {
-    surface: Surface,
-    device: Device,
-    queue: Queue,
+    pub surface: Surface,
+    pub device: Device,
+    pub queue: Queue,
 }
 
 impl Render {
-    fn new(backend: BackendBit, window: &Window) -> Self {
+    fn _new(backend: BackendBit, window: &Window) -> Self {
         let instance = Instance::new(backend);
         let surface = unsafe { instance.create_surface(window) };
 
@@ -106,10 +105,6 @@ impl Render {
             queue,
         }
     }
-}
-
-unsafe fn create_surface(instance: &Instance, window: &Window) -> Surface {
-    instance.create_surface(window)
 }
 
 impl GFX {
@@ -192,11 +187,7 @@ impl GFX {
         });
 
         //-----------------------------
-        //let camera = Camera::new(&sc_desc);
-
-        //let pos: Point3<f32> = (3., 2., 1.).into();
-        let mut uniforms = Uniforms::new();
-        //uniforms.update_view_proj(&camera.build_view_projection(pos, (-3., -2., -1.).into()));
+        let uniforms = Uniforms::new();
 
         let uniform_buffer = device.create_buffer_init(&util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),

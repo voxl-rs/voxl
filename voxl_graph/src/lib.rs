@@ -17,14 +17,6 @@ pub mod wgpu {
         pub index_buff: Buffer,  //
         pub num_indices: u32,    //
     }
-
-    #[derive(Debug)]
-    pub struct RenderBlackBox {
-        pub surface: Surface,
-        pub device: Device,
-        pub queue: Queue,
-        pub swap_chain: SwapChain,
-    }
 }
 pub use winit;
 pub mod uniforms;

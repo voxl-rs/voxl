@@ -14,7 +14,7 @@ use voxl::{
     graph::{
         cgmath::Point3,
         gfx::GFX,
-        uniforms::Camera,
+        uniforms::{Camera, Uniforms},
         winit::{
             dpi::PhysicalSize,
             event::{KeyboardInput, VirtualKeyCode},
@@ -38,13 +38,13 @@ fn main() {
     resources.insert(true);
 
     // Render resources
-    let (render_black_box, render_bunch, sc_desc, uniforms) = GFX::new(&window).dump();
+    let (render_black_box, render_bunch, sc_desc) = GFX::new(&window).dump();
 
     // Cams
     let camera = Camera::new(&sc_desc);
     world.push((camera, Point3::<f32>::new(0., 0., -10.)));
     // Uniforms and SwapChainDescriptor
-    resources.insert(uniforms);
+    resources.insert(Uniforms::new());
     resources.insert(sc_desc);
 
     let screen_size_reader = event_channel_init::<PhysicalSize<u32>>(&mut resources);

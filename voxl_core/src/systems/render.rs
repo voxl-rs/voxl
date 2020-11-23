@@ -2,6 +2,7 @@ use crate::ecs::*;
 use voxl_graph::{
     bytemuck,
     cgmath::{Point3, Vector3},
+    gfx::Render,
     uniforms::{Camera, Uniforms},
     wgpu::*,
 };
@@ -21,13 +22,11 @@ pub fn camera(
 #[system]
 pub fn render(
     #[state] delta_time: &mut DeltaTime,
-    #[state]
-    RenderBlackBox {
+    #[state] Render {
         surface,
         device,
         queue,
-        swap_chain,
-    }: &mut RenderBlackBox,
+    }: &mut Render,
     #[state]
     RenderBunch {
         pipeline,
@@ -46,8 +45,8 @@ pub fn render(
     queue.write_buffer(&uniform_buff, 0, bytemuck::cast_slice(&[*uniforms]));
 
     let frame = {
-        *swap_chain = device.create_swap_chain(&surface, &sc_desc);
-        swap_chain
+        device
+            .create_swap_chain(&surface, &sc_desc)
             .get_current_frame()
             .expect("Timeout getting texture")
             .output
