@@ -1,0 +1,6 @@
+/target
+/shaders/*.spv
+/voxl_graph/target/
+/voxl_core/target/
+/voxl_time/target/
+

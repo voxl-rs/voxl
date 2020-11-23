@@ -1,0 +1,27 @@
+[package]
+name = "voxl_graph"
+version = "0.1.0"
+authors = ["Senre <jesuisutile0@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+winit = "0.23.0"
+wgpu = { version = "0.6.0", features = ["vulkan-portability"] }
+image = "0.23.11"
+cgmath = "0.17.0"
+nalgebra = "0.23.0"
+
+# Utils
+futures = "0.3.0"
+bytemuck = "1.4.1"
+anyhow = "1.0.33"
+
+[dev-dependencies]
+
+[build-dependencies]
+shaderc = "0.6.3"
+fs_extra = "1.2.0"
+glob = "0.3.0"
+anyhow = "1.0.33"

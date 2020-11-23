@@ -1,0 +1,29 @@
+[package]
+name = "voxl"
+version = "0.1.0"
+authors = ["Senre <jesuisutile0@gmail.com>"]
+edition = "2018"
+description = "an engine for voxel games"
+readme = "README.md"
+homepage = "https://github.com/voxl-rs/voxl"
+repository = "https://github.com/voxl-rs/voxl.git"
+license = "MPLv2"
+keywords = ["game engine", "voxels", "3D"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+voxl_graph = { path = "voxl_graph", version = "0.1.0", optional = false }
+voxl_time = { path = "voxl_time", version = "0.1.0", optional = false }
+voxl_core = { path = "voxl_core", version = "0.1.0", optional = false }
+
+env_logger = "0.8.1"
+log = "0.4.11"
+
+[dev-dependencies]
+
+[build-dependencies]
+shaderc = "0.6.3"
+fs_extra = "1.2.0"
+glob = "0.3.0"
+anyhow = "1.0.33"
