@@ -18,7 +18,7 @@ impl Vertex {
         }
     }
 
-    pub fn desc<'a>() -> VertexBufferDescriptor<'a> {
+    pub fn vb_desc<'a>() -> VertexBufferDescriptor<'a> {
         VertexBufferDescriptor {
             stride: std::mem::size_of::<Self>() as BufferAddress,
             step_mode: InputStepMode::Vertex,
