@@ -106,10 +106,6 @@ impl Render {
             queue,
         }
     }
-
-    fn new_shader_module(&mut self, path: &'static str) -> ShaderModule {
-        self.device.create_shader_module(include_spirv!(path))
-    }
 }
 
 unsafe fn create_surface(instance: &Instance, window: &Window) -> Surface {
