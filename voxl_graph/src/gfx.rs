@@ -121,7 +121,7 @@ impl Render {
     }
 
     pub fn bunch(&self, sc_desc: &SwapChainDescriptor) -> RenderBunch {
-        let diffuse_bytes = include_bytes!("../../assets/hyper_cube::sand.png");
+        let diffuse_bytes = include_bytes!("../../assets/hyper_cube_sand.png");
         let diffuse_texture = texture::Texture::from_bytes(
             &self.device,
             &self.queue,
