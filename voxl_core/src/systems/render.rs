@@ -2,7 +2,7 @@ use crate::ecs::*;
 use voxl_graph::{
     bytemuck,
     cgmath::{Point3, Vector3},
-    gfx::Render,
+    gfx::{Render, RenderBunch},
     uniforms::{Camera, Uniforms},
     wgpu::*,
 };
