@@ -4,3 +4,6 @@
 /voxl_core/target/
 /voxl_time/target/
 
+/voxl_core/Cargo.lock
+/voxl_graph/Cargo.lock
+/voxl_time/Cargo.lock
