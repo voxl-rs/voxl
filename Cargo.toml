@@ -1,13 +1,14 @@
 [package]
 name = "voxl"
 version = "0.1.0"
-authors = ["Senre <jesuisutile0@gmail.com>"]
 edition = "2018"
-description = "an engine for voxel games"
+description = "An engine for voxel games"
+license-file = "LICENSE"
 readme = "README.md"
+authors = ["Senre <jesuisutile0@gmail.com>"]
 homepage = "https://github.com/voxl-rs/voxl"
 repository = "https://github.com/voxl-rs/voxl.git"
-license = "MPLv2"
+documentation = "https://docs.rs/voxl"
 keywords = ["game engine", "voxels", "3D"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
