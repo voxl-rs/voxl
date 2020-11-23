@@ -13,8 +13,9 @@ use voxl::{
     },
     graph::{
         cgmath::Point3,
-        gfx::GFX,
+        gfx::{swap_chain, Render},
         uniforms::{Camera, Uniforms},
+        wgpu::BackendBit,
         winit::{
             dpi::PhysicalSize,
             event::{KeyboardInput, VirtualKeyCode},
@@ -30,21 +31,20 @@ fn main() {
 
     let mut world = World::default();
     let mut resources = Resources::default();
+    // Termination
+    resources.insert(true);
 
     let event_loop = EventLoop::new();
     let window = Window::new(&event_loop).unwrap();
 
-    // Termination
-    resources.insert(true);
+    let sc_desc = swap_chain(&window.inner_size());
+    let render = Render::new(BackendBit::PRIMARY, &window);
+    let render_bunch = render.bunch(&sc_desc);
 
-    // Render resources
-    let (render_black_box, render_bunch, sc_desc) = GFX::new(&window).dump();
-
-    // Cams
     let camera = Camera::new(&sc_desc);
-    world.push((camera, Point3::<f32>::new(0., 0., -10.)));
+    world.push((camera, Point3::<f32>::new(0., 0., 10.)));
     // Uniforms and SwapChainDescriptor
-    resources.insert(Uniforms::new());
+    resources.insert(Uniforms::default());
     resources.insert(sc_desc);
 
     let screen_size_reader = event_channel_init::<PhysicalSize<u32>>(&mut resources);
@@ -54,17 +54,13 @@ fn main() {
         .add_thread_local(window_system(DeltaTime::default(), event_loop, window))
         .add_system(screen_size_system(screen_size_reader))
         .add_system(camera_system(DeltaTime::default()))
-        .add_system(render_system(
-            DeltaTime::default(),
-            render_black_box,
-            render_bunch,
-        ))
+        .add_system(render_system(DeltaTime::default(), render, render_bunch))
         .add_system(input_system(
             DeltaTime::default(),
             keyboard_reader,
             MovementBindings::new(
+                VirtualKeyCode::Space,
                 VirtualKeyCode::LShift,
-                VirtualKeyCode::LControl,
                 VirtualKeyCode::Left,
                 VirtualKeyCode::Right,
                 VirtualKeyCode::Up,
