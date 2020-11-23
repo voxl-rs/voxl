@@ -1,6 +1,6 @@
 [package]
 name = "voxl"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2018"
 description = "An engine for voxel games"
 license-file = "LICENSE"
@@ -14,9 +14,9 @@ keywords = ["game engine", "voxels", "3D"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-voxl_graph = { path = "voxl_graph", version = "0.1.0", optional = false }
-voxl_time = { path = "voxl_time", version = "0.1.0", optional = false }
-voxl_core = { path = "voxl_core", version = "0.1.0", optional = false }
+voxl_graph = { path = "voxl_graph", version = "0.0.1", optional = false }
+voxl_time = { path = "voxl_time", version = "0.0.1", optional = false }
+voxl_core = { path = "voxl_core", version = "0.0.1", optional = false }
 
 env_logger = "0.8.1"
 log = "0.4.11"
