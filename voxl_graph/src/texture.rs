@@ -8,6 +8,51 @@ pub struct Texture {
 }
 
 impl Texture {
+    pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
+
+    pub fn create_depth_texture(
+        device: &Device,
+        sc_desc: &SwapChainDescriptor,
+        label: Option<&str>,
+    ) -> Self {
+        let size = Extent3d {
+            width: sc_desc.width,
+            height: sc_desc.height,
+            depth: 1,
+        };
+
+        let desc = TextureDescriptor {
+            label,
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: Self::DEPTH_FORMAT,
+            usage: TextureUsage::OUTPUT_ATTACHMENT | TextureUsage::SAMPLED,
+        };
+
+        let texture = device.create_texture(&desc);
+        let view = texture.create_view(&TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&SamplerDescriptor {
+            address_mode_u: AddressMode::ClampToEdge,
+            address_mode_v: AddressMode::ClampToEdge,
+            address_mode_w: AddressMode::ClampToEdge,
+            mag_filter: FilterMode::Linear,
+            min_filter: FilterMode::Linear,
+            mipmap_filter: FilterMode::Nearest,
+            compare: Some(CompareFunction::Less),
+            lod_min_clamp: -100.,
+            lod_max_clamp: 100.,
+            ..Default::default()
+        });
+
+        Self {
+            texture,
+            view,
+            sampler,
+        }
+    }
+
     pub fn from_bytes(
         device: &Device,
         queue: &Queue,

@@ -2,7 +2,8 @@ use crate::ecs::*;
 use voxl_graph::{
     bytemuck,
     cgmath::{Point3, Vector3},
-    gfx::{Render, RenderBunch},
+    gfx::{Render, RenderBunch, NUM_INSTANCES},
+    texture,
     uniforms::{Camera, Uniforms},
     wgpu::*,
 };
@@ -35,10 +36,12 @@ pub fn render(
         uniform_buff,
         vertex_buff,
         index_buff,
+        instance_buff,
         num_indices,
     }: &RenderBunch,
-    #[resource] sc_desc: &SwapChainDescriptor, //
+    #[resource] sc_desc: &SwapChainDescriptor,
     #[resource] uniforms: &Uniforms,
+    // #[resource] instances: &Vec<Instance>,
 ) {
     println!("dt: {} fps: {}", delta_time.val(), delta_time.tps());
     // Camera Projection
@@ -51,6 +54,9 @@ pub fn render(
             .expect("Timeout getting texture")
             .output
     };
+
+    let depth_texture =
+        texture::Texture::create_depth_texture(device, sc_desc, Some("Depth Texture"));
 
     let mut encoder = device.create_command_encoder(&CommandEncoderDescriptor {
         label: Some("Render Encoder"),
@@ -71,7 +77,14 @@ pub fn render(
                     store: true,
                 },
             }],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(RenderPassDepthStencilAttachmentDescriptor {
+                attachment: &depth_texture.view,
+                depth_ops: Some(Operations {
+                    load: LoadOp::Clear(1.),
+                    store: true,
+                }),
+                stencil_ops: None,
+            }),
         });
 
         pass.set_pipeline(&pipeline);
@@ -79,10 +92,15 @@ pub fn render(
         pass.set_bind_group(1, &uniform_bg, &[]);
 
         pass.set_vertex_buffer(0, vertex_buff.slice(..));
+
+        pass.set_vertex_buffer(1, instance_buff.slice(..));
         pass.set_index_buffer(index_buff.slice(..));
-        pass.draw_indexed(0..*num_indices, 0, 0..1);
+        //pass.draw_indexed(0..*num_indices, 0, 0..instances.len() as _);
+        pass.draw_indexed(0..*num_indices, 0, 0..IN as _);
     }
 
     queue.submit(std::iter::once(encoder.finish()));
     delta_time.flush();
 }
+
+const IN: u32 = 16 * 16 * 16;

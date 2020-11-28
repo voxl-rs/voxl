@@ -13,6 +13,8 @@ image = "0.23.11"
 cgmath = "0.17.0"
 nalgebra = "0.23.0"
 
+rand = "0.7.3"
+
 # Utils
 futures = "0.3.0"
 bytemuck = "1.4.1"
