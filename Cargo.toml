@@ -14,12 +14,34 @@ keywords = ["game engine", "voxels", "3D"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-voxl_graph = { path = "voxl_graph", version = "0.0.1", optional = false }
-voxl_time = { path = "voxl_time", version = "0.0.1", optional = false }
-voxl_core = { path = "voxl_core", version = "0.0.1", optional = false }
-
 env_logger = "0.8.1"
 log = "0.4.11"
+
+# Core 
+legion = { version = "0.3.1", features = ["serde"]}
+shrev = "1.1.1"
+rayon = "1.5.0"
+
+# Something
+serde = "1.0.117"
+ron = "0.6.2"
+
+# Graph
+winit = "0.23.0"
+wgpu = { version = "0.6.0", features = ["vulkan-portability"] }
+image = "0.23.11"
+
+# Math
+cgmath = "0.17.0"
+nalgebra = "0.23.0"
+noise = "0.6.0"
+
+# Utils
+futures = "0.3.0"
+bytemuck = "1.4.1"
+anyhow = "1.0.33"
+rand = "0.7.3"
+shrinkwraprs = "0.3.0"
 
 [dev-dependencies]
 criterion = "0.3.3"
