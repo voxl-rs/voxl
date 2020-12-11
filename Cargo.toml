@@ -17,10 +17,11 @@ keywords = ["game engine", "voxels", "3D"]
 env_logger = "0.8.1"
 log = "0.4.11"
 
-# Core 
+# Core
 legion = { version = "0.3.1", features = ["serde"]}
 shrev = "1.1.1"
 rayon = "1.5.0"
+evmap = "10.0.2"
 
 # Something
 serde = "1.0.117"
@@ -28,7 +29,7 @@ ron = "0.6.2"
 
 # Graph
 winit = "0.23.0"
-wgpu = { version = "0.6.0", features = ["vulkan-portability"] }
+wgpu = { version = "0.6.2", features = ["vulkan-portability"] }
 image = "0.23.11"
 
 # Math
@@ -42,6 +43,7 @@ bytemuck = "1.4.1"
 anyhow = "1.0.33"
 rand = "0.7.3"
 shrinkwraprs = "0.3.0"
+# procinfo = "0.4.2"
 
 [dev-dependencies]
 criterion = "0.3.3"
