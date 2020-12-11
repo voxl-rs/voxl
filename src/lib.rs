@@ -11,26 +11,29 @@
 //! [lg]: https://github.com/amethyst/legion
 //! [bk]: https://book.voxl.rs/master/
 //! ```rust
+//! use voxl::{
+//!     vox::{new_world, Accessor},
+//!     math::ng::Point3,
+//! };
 //!
-//! /*
-//! #[derive(GameState)]
-//! pub struct StartUpState {
-//!     data: u128,
+//! #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+//! struct MyAccessor;
+//! impl Accessor for MyAccessor {
+//!     const SIDE_LEN: usize = 8;
+//! }
+//!
+//! enum Blocks {
+//!     Air,
+//!     Solid,
 //! }
 //!
 //! fn main() {
-//!     let mut vox = Vox<StartUpState, u32, 512> {
-//!         name: "Minecraft Ripoff",
-//!         strategy: ChunkLoadingStrategy::Cube { side: 8 },
-//!     };
-//!
-//!     vox.run();
 //! }
-//! */
 //! ```
 
 #![feature(min_const_generics)]
 #![doc(html_logo_url = "../../../assets/hyper_cube_sand2.png")]
+/*
 #![warn(
     missing_debug_implementations,
     missing_docs,
@@ -39,11 +42,22 @@
 )]
 #![warn(clippy::all)]
 #![allow(clippy::new_without_default)]
+*/
 
 /// Contains other essential features that your game will need
 pub mod core;
+
+/// To get your application loop and window up
+pub mod app;
+
 /// Handles your gui, rendering, etc; To draw something on your screen
 pub mod graph;
+
+/// Data Types for storing and processing chunked data
+pub mod chunk;
+
+/// Timing
+pub mod time;
 
 /// Inevitable math made accesible here
 pub mod math {
@@ -51,8 +65,3 @@ pub mod math {
     pub use nalgebra as ng;
     pub use noise as no;
 }
-
-/// Timing
-pub mod time;
-/// Data Types for storing and processing chunked data
-pub mod vox;
