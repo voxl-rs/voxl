@@ -5,7 +5,7 @@ use crate::{
         events::insert_event_channel,
         Input,
     },
-    graph::{
+    gfx::{
         gfx::{swap_chain, Render},
         gpu::BackendBit,
         systems::{event_loop::event_loop_system, render::render_system},

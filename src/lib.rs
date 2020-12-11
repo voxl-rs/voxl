@@ -51,7 +51,7 @@ pub mod core;
 pub mod app;
 
 /// Handles your gui, rendering, etc; To draw something on your screen
-pub mod graph;
+pub mod gfx;
 
 /// Data Types for storing and processing chunked data
 pub mod chunk;

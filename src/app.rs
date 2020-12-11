@@ -1,7 +1,7 @@
 /// All you need to get started
 use crate::{
     core::ecs::{systems::Builder, *},
-    graph::bundles::{camera::Cam, graph::Graph},
+    gfx::bundles::{camera::Cam, graph::Graph},
 };
 
 pub struct AppBuilder {

@@ -1,7 +1,7 @@
 use crate::{
     app::Bundle,
     core::ecs::{systems::Builder, ResourceIfChanged, *},
-    graph::{
+    gfx::{
         camera::Projection, gpu::SwapChainDescriptor, systems::render::camera_system,
         uniforms::Uniforms,
     },

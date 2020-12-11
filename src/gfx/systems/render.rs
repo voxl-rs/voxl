@@ -1,6 +1,6 @@
 use crate::{
     core::ecs::*,
-    graph::{
+    gfx::{
         camera::{Camera, Projection},
         gfx::{Render, RenderBunch},
         gpu::*,

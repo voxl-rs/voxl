@@ -1,7 +1,7 @@
 use crate::{
     app::ResumeApp,
     core::{ecs::*, events::EventChannel, Input},
-    graph::{
+    gfx::{
         gpu::SwapChainDescriptor,
         win::{
             event::{DeviceEvent, Event, WindowEvent},

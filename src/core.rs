@@ -39,7 +39,7 @@ pub mod ecs {
     }
 }
 
-use crate::graph::win::event::KeyboardInput;
+use crate::gfx::win::event::KeyboardInput;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Input {
