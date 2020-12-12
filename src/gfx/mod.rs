@@ -1,5 +1,3 @@
-/// System Bundles
-pub mod bundles;
 /// Camera component
 pub mod camera;
 /// TODO: Fix this
@@ -8,8 +6,8 @@ pub mod gfx;
 pub mod instance;
 /// Chunk to model data
 pub mod model;
-/// GUI and Rendering
-pub mod systems;
+///
+pub mod routines;
 /// Render Pipeline Texture data
 pub mod texture;
 /// Render Pipeline Uniform data
