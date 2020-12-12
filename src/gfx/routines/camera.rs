@@ -1,17 +1,15 @@
+use super::sys::render::camera_system;
 use crate::{
-    app::Bundle,
+    app::Routine,
     core::ecs::{systems::Builder, ResourceIfChanged, *},
-    gfx::{
-        camera::Projection, gpu::SwapChainDescriptor, systems::render::camera_system,
-        uniforms::Uniforms,
-    },
+    gfx::{camera::Projection, gpu::SwapChainDescriptor, uniforms::Uniforms},
     math::cg::{Deg, Matrix4, SquareMatrix},
 };
 
 #[derive(Debug)]
 pub struct Cam;
-impl Bundle for Cam {
-    fn arrange(
+impl Routine for Cam {
+    fn setup(
         _: &mut World,
         resources: &mut Resources,
         schedule: &mut Builder,

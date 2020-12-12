@@ -1,5 +1,5 @@
 use crate::{
-    app::Bundle,
+    app::Routine,
     core::{
         ecs::{systems::Builder, *},
         events::insert_event_channel,
@@ -8,17 +8,18 @@ use crate::{
     gfx::{
         gfx::{swap_chain, Render},
         gpu::BackendBit,
-        systems::{event_loop::event_loop_system, render::render_system},
         win::{event_loop::EventLoop, window::Window},
         DisplayFPS, DrawFrame,
     },
     time::FpsCounter,
 };
 
+use super::sys::{event_loop::event_loop_system, render::render_system};
+
 #[derive(Debug)]
 pub struct Graph;
-impl Bundle for Graph {
-    fn arrange(
+impl Routine for Graph {
+    fn setup(
         _: &mut World,
         mut resources: &mut Resources,
         schedule: &mut Builder,

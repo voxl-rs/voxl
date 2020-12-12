@@ -1,7 +1,7 @@
 /// All you need to get started
 use crate::{
     core::ecs::{systems::Builder, *},
-    gfx::bundles::{camera::Cam, graph::Graph},
+    gfx::routines::{Cam, Graph},
 };
 
 pub struct AppBuilder {
@@ -11,7 +11,9 @@ pub struct AppBuilder {
 }
 
 impl AppBuilder {
-    fn empty() -> Self {
+    /// An empty builder, this is not recommended as it does not
+    /// contain built in graphics, windowing, and Input event channel
+    pub fn empty() -> Self {
         Self {
             world: World::default(),
             resources: Resources::default(),
@@ -19,8 +21,8 @@ impl AppBuilder {
         }
     }
 
-    pub fn bundle<T: Bundle>(mut self) -> Result<Self, Box<dyn std::error::Error>> {
-        T::arrange(&mut self.world, &mut self.resources, &mut self.schedule)?;
+    pub fn with_routine<T: Routine>(mut self) -> Result<Self, Box<dyn std::error::Error>> {
+        T::setup(&mut self.world, &mut self.resources, &mut self.schedule)?;
         Ok(self)
     }
 }
@@ -33,9 +35,9 @@ impl Default for AppBuilder {
         log::debug!("resource loaded -> ResumeApp");
 
         builder
-            .bundle::<Graph>()
+            .with_routine::<Graph>()
             .expect("unable to initiate graphics")
-            .bundle::<Cam>()
+            .with_routine::<Cam>()
             .expect("unable to initiate camera")
     }
 }
@@ -79,8 +81,8 @@ impl App {
     }
 }
 
-pub trait Bundle {
-    fn arrange(
+pub trait Routine {
+    fn setup(
         world: &mut World,
         resources: &mut Resources,
         schedule: &mut Builder,
