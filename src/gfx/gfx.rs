@@ -1,5 +1,7 @@
 use super::{
-    instance, texture,
+    instance,
+    model::*,
+    texture,
     uniforms::Uniforms,
     vertex::{TexVertex, Vertex},
 };
@@ -8,12 +10,12 @@ use cgmath::{Quaternion, Vector3};
 use wgpu::{util::DeviceExt, *};
 use winit::{dpi::PhysicalSize, window::Window};
 
-pub const VERTEXFACE: &[TexVertex] = &[
+pub const VERTICES_FACE: &[TexVertex] = &[
     // Top
     TexVertex::new([-0.5, 0.5, -0.5], [0., 0.]), // 0
-    TexVertex::new([0.5, 0.5, -0.5], [2., 0.]),  // 1
-    TexVertex::new([-0.5, 0.5, 0.5], [0., 2.]),  // 2
-    TexVertex::new([0.5, 0.5, 0.5], [2., 2.]),   // 3
+    TexVertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 1
+    TexVertex::new([-0.5, 0.5, 0.5], [0., 1.]),  // 2
+    TexVertex::new([0.5, 0.5, 0.5], [1., 1.]),   // 3
 ];
 
 pub const INDICE_FACE: &[u16] = &[1, 0, 2, 2, 3, 1];
@@ -288,7 +290,7 @@ impl Render {
             usage: BufferUsage::INDEX,
         });
 
-        let instance_data: Vec<instance::InstanceRaw> = create_instances()
+        let instance_data: Vec<instance::InstanceRaw> = create_chunk()
             .iter()
             .map(|i| instance::InstanceRaw::from(*i))
             .collect();
@@ -312,22 +314,197 @@ impl Render {
     }
 }
 
-// const SEED: f64 = 1351463145.;
+use crate::chunk::{Accessor, Chunk};
+fn create_chunk() -> Vec<instance::Instance> {
+    const SEED: f64 = 347_510_572.;
+    const SMOOTHING: f64 = 0.05;
+    use noise::NoiseFn;
+    let noise = noise::OpenSimplex::new();
 
-fn create_instances() -> Vec<instance::Instance> {
+    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+    struct Dimensions;
+    impl Accessor for Dimensions {
+        const SIDE_LEN: usize = 16;
+    }
+
+    let mut c: Chunk<Dimensions, bool, 4096> = Chunk::default();
+
+    for i in 0..4096 {
+        let [y, x, z] = Dimensions::from_index(i);
+        print!("y: {}, x: {}, z: {} ", y, x, z);
+        let val = noise
+            .get([
+                y as f64 * SMOOTHING,
+                x as f64 * SMOOTHING,
+                z as f64 * SMOOTHING,
+                SEED,
+            ])
+            .abs();
+
+        println!("val: {}", val);
+
+        if val < 0.03 {
+            c[[y, x, z]] = true;
+        }
+    }
+
+    let mut res: Vec<instance::Instance> = Vec::with_capacity(4096);
+    for i in 0..4096 {
+        let [y, x, z] = Dimensions::from_index(i);
+
+        if c[[y, x, z]] {
+            res.push(instance::Instance {
+                position: Vector3::new(x as f32, y as f32, z as f32),
+                rotation: quat_identity(),
+            });
+            /*
+            if y == 0 {
+                if !c[[y + 1, x, z]] {
+                    res.push(bottom([y, x, z]));
+                }
+                res.push(top([y + 1, x, z]));
+            } else if y == 15 {
+                if !c[[y - 1, x, z]] {
+                    res.push(top([y, x, z]));
+                }
+            } else {
+                if !c[[y + 1, x, z]] {
+                    res.push(bottom([y, x, z]));
+                }
+                if !c[[y - 1, x, z]] {
+                    res.push(top([y, x, z]));
+                }
+            }
+
+            if x == 0 {
+                if !c[[y, x + 1, z]] {
+                    res.push(right([y, x, z]));
+                }
+            } else if x == 15 {
+                if !c[[y, x - 1, z]] {
+                    res.push(left([y, x, z]));
+                }
+            } else {
+                if !c[[y, x + 1, z]] {
+                    res.push(right([y, x, z]));
+                }
+                if !c[[y, x - 1, z]] {
+                    res.push(left([y, x, z]));
+                }
+            }
+
+            if z == 0 {
+                if !c[[y, x, z + 1]] {
+                    res.push(front([y, x, z]));
+                }
+            } else if z == 15 {
+                if !c[[y, x, z - 1]] {
+                    res.push(back([y, x, z]));
+                }
+            } else {
+                if !c[[y, x, z + 1]] {
+                    res.push(front([y, x, z]));
+                }
+                if !c[[y, x, z - 1]] {
+                    res.push(back([y, x, z]));
+                }
+            }
+            */
+        }
+    }
+
+    log::info!("generated chunk: {:?}", c);
+    /*
+    let mut c = create_instances([0, 0, 0]);
+    c.extend(create_instances([1, 0, 0]));
+    c.extend(create_instances([-1, 0, 0]));
+    */
+    res
+}
+
+use cgmath::Rotation;
+
+fn top([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: quat_identity(),
+    }
+}
+
+fn bottom([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(0., -1., 0.)),
+    }
+}
+
+fn right([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(-1., 0., 0.)),
+    }
+}
+
+fn left([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(1., 0., 0.)),
+    }
+}
+
+fn front([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 1., 0.), Vector3::new(0., 0., -1.)),
+    }
+}
+
+fn back([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., -1., 0.), Vector3::new(0., 0., 1.)),
+    }
+}
+
+fn create_instances([y, x, z]: [i32; 3]) -> Vec<instance::Instance> {
     let mut res: Vec<instance::Instance> = Vec::with_capacity(1);
 
+    // Top
     res.push(instance::Instance {
-        position: Vector3::new(0., 0., 0.),
+        position: Vector3::new(x as f32, y as f32, z as f32),
         rotation: quat_identity(),
     });
 
-    /*
+    // Botton
     res.push(instance::Instance {
-        position: Vector3::new(1., 0., 0.),
-        rotation: quat_identity(),
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(0., -1., 0.)),
     });
-    */
+
+    // Front?
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 1., 0.), Vector3::new(0., 0., -1.)),
+    });
+
+    // Back
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., -1., 0.), Vector3::new(0., 0., 1.)),
+    });
+
+    // Right
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(-1., 0., 0.)),
+    });
+
+    // Left
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(1., 0., 0.)),
+    });
+
     res
 }
 
