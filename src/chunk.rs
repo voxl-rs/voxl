@@ -13,6 +13,14 @@ pub struct Chunk<Dimensions: Accessor, BlockData: Unit, const ELEMENT_COUNT: usi
 }
 
 impl<D: Accessor, T: Unit, const N: usize> Chunk<D, T, N> {
+    pub fn iter_slice(&self) -> std::slice::Iter<'_, T> {
+        self.data.iter()
+    }
+
+    pub fn iter_slice_mut(&mut self) -> std::slice::IterMut<'_, T> {
+        self.data.iter_mut()
+    }
+
     /// Reassigns a new Accessor data for query
     pub fn new_accessor<A: Accessor>(self) -> Chunk<A, T, N> {
         Chunk {
@@ -64,6 +72,15 @@ pub trait Accessor: Clone + Copy + Eq + std::hash::Hash {
     const QUAD_LEN: usize = Self::SIDE_LEN * Self::SIDE_LEN;
     /// No. of all elements in represented with a cube
     const CUBE_LEN: usize = Self::QUAD_LEN * Self::SIDE_LEN;
+
+    /// returns components in this order YXZ
+    fn from_index(i: usize) -> [usize; 3] {
+        let y = i / Self::QUAD_LEN;
+        let z = (i - y * Self::QUAD_LEN) / Self::SIDE_LEN;
+        let x = i - (z * Self::SIDE_LEN + y * Self::QUAD_LEN);
+
+        [y, x, z]
+    }
 }
 
 /// Ideal type to represent each chunk element for safely working with ECS
@@ -90,6 +107,28 @@ fn testing() {
     chunk[[7, 7, 7]] = 100;
 
     assert_eq!(chunk[[7, 7, 7]], 100);
+}
+
+#[derive(Debug)]
+pub struct ChunkFlatIter<D: Accessor, T: Unit, const N: usize> {
+    index: usize,
+    chunk: [T; N],
+    state_a: PhantomData<D>,
+    state_b: PhantomData<T>,
+}
+
+impl<D: Accessor, T: Unit, const N: usize> Iterator for ChunkFlatIter<D, T, N> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index < N {
+            self.index += 1;
+
+            return Some(self.chunk[self.index]);
+        }
+
+        None
+    }
 }
 
 #[test]
