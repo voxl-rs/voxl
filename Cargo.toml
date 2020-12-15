@@ -14,42 +14,41 @@ keywords = ["game engine", "voxels", "3D"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-env_logger = "0.8.1"
-log = "0.4.11"
+env_logger = "0.8"
+log = "0.4"
 
 # Core
-legion = { version = "0.3.1", features = ["serde"]}
-shrev = "1.1.1"
-rayon = "1.5.0"
-evmap = "10.0.2"
+legion = { version = "0.3", features = ["serde"]}
+shrev = "1.1"
+rayon = "1.5"
+evmap = "10.0"
 
 # Something
-serde = "1.0.117"
-ron = "0.6.2"
+serde = "1.0"
+ron = "0.6"
 
 # Graph
-winit = "0.23.0"
-wgpu = { version = "0.6.2", features = ["vulkan-portability"] }
-image = "0.23.11"
+winit = "0.23"
+wgpu = { version = "0.6", features = ["vulkan-portability"] }
+image = "0.23"
 
 # Math
-cgmath = "0.17.0"
-nalgebra = "0.23.0"
-noise = "0.6.0"
+cgmath = "0.17"
+nalgebra = "0.23"
+noise = "0.6"
 
 # Utils
-futures = "0.3.0"
-bytemuck = "1.4.1"
-anyhow = "1.0.33"
-rand = "0.7.3"
-shrinkwraprs = "0.3.0"
-# procinfo = "0.4.2"
+futures = "0.3"
+bytemuck = "1.4"
+anyhow = "1.0"
+rand = "0.7"
+shrinkwraprs = "0.3"
 
 [dev-dependencies]
-criterion = "0.3.3"
+criterion = "0.3"
 
 [build-dependencies]
-shaderc = "0.6.3"
-fs_extra = "1.2.0"
-glob = "0.3.0"
-anyhow = "1.0.33"
+shaderc = "0.7"
+fs_extra = "1.2"
+glob = "0.3"
+anyhow = "1.0"

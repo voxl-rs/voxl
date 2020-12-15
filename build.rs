@@ -42,9 +42,9 @@ impl ShaderData {
 
 fn main() -> Result<()> {
     let mut shader_paths = [
-        glob("../shaders/**/*.vert")?,
-        glob("../shaders/**/*.frag")?,
-        glob("../shaders/**/*.comp")?,
+        glob("shaders/**/*.vert")?,
+        glob("shaders/**/*.frag")?,
+        glob("shaders/**/*.comp")?,
     ];
 
     let shaders = shader_paths
@@ -59,7 +59,6 @@ fn main() -> Result<()> {
 
     for shader in shaders {
         println!("cargo:rerun-if-changed={:?}", shader.src_path);
-
         let compiled = compiler.compile_into_spirv(
             &shader.src,
             shader.kind,
