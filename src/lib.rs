@@ -63,5 +63,5 @@ pub mod time;
 pub mod math {
     pub use cgmath as cg;
     pub use nalgebra as ng;
-    pub use noise as no;
+    pub use noice as no;
 }

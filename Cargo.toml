@@ -35,7 +35,7 @@ image = "0.23"
 # Math
 cgmath = "0.17"
 nalgebra = "0.23"
-noise = "0.6"
+noice = "0.7"
 
 # Utils
 futures = "0.3"

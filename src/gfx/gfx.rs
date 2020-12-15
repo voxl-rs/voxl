@@ -318,8 +318,8 @@ use crate::chunk::{Accessor, Chunk};
 fn create_chunk() -> Vec<instance::Instance> {
     const SEED: f64 = 347_510_572.;
     const SMOOTHING: f64 = 0.05;
-    use noise::NoiseFn;
-    let noise = noise::OpenSimplex::new();
+    use noice::NoiseFn;
+    let noise = noice::OpenSimplex::new();
 
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
     struct Dimensions;
