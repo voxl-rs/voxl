@@ -1,5 +1,5 @@
 use voxl::{
-    app::{AppBuilder, Bundle, ResumeApp},
+    app::{AppBuilder, ResumeApp, Routine},
     chunk::Accessor,
     core::{
         ecs::{systems::Builder, *},
@@ -33,19 +33,15 @@ impl Default for Blocks {
 fn main() {
     env_logger::init();
     let builder = AppBuilder::default();
-    let mut app = builder.bundle::<MyChonk>().unwrap().build(8);
+    let mut app = builder.routine::<MyChonk>().build(8);
 
     app.run();
 }
 
 #[derive(Debug)]
 pub struct MyChonk;
-impl Bundle for MyChonk {
-    fn arrange(
-        world: &mut World,
-        mut resources: &mut Resources,
-        schedule: &mut Builder,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+impl Routine for MyChonk {
+    fn setup(world: &mut World, mut resources: &mut Resources, schedule: &mut Builder) {
         world.push((
             Camera::new(Deg(-90f32), Deg(-20f32)),
             Point3::<f32>::new(0., 0., 10.),
@@ -65,8 +61,6 @@ impl Bundle for MyChonk {
                 VirtualKeyCode::Down,
             ),
         ));
-
-        Ok(())
     }
 }
 
