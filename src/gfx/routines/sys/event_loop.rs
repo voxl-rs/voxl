@@ -6,7 +6,7 @@ use crate::{
         win::{
             event::{DeviceEvent, Event, WindowEvent},
             event_loop::{ControlFlow, EventLoop},
-            platform::desktop::EventLoopExtDesktop,
+            platform::run_return::EventLoopExtRunReturn,
             window::WindowId,
         },
         DisplayFPS, DrawFrame,

@@ -28,7 +28,7 @@ serde = "1.0"
 ron = "0.6"
 
 # Graph
-winit = "0.23"
+winit = "0.24"
 wgpu = { version = "0.6", features = ["vulkan-portability"] }
 image = "0.23"
 
