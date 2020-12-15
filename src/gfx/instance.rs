@@ -1,3 +1,4 @@
+use super::vertex::Vertex;
 use bytemuck::{Pod, Zeroable};
 use cgmath::{Matrix4, Quaternion, Vector3};
 use wgpu::{
@@ -26,8 +27,8 @@ pub struct InstanceRaw {
     model: [[f32; 4]; 4],
 }
 
-impl InstanceRaw {
-    pub fn vb_desc<'a>() -> VertexBufferDescriptor<'a> {
+impl Vertex for InstanceRaw {
+    fn vb_desc<'a>() -> VertexBufferDescriptor<'a> {
         use std::mem::size_of;
         VertexBufferDescriptor {
             stride: size_of::<Self>() as BufferAddress,

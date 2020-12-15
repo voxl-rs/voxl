@@ -1,6 +1,8 @@
 use image::{load_from_memory, DynamicImage, GenericImageView};
 use wgpu::*;
 
+/// Texture Data
+#[derive(Debug)]
 pub struct Texture {
     pub texture: wgpu::Texture,
     pub view: TextureView,
@@ -69,9 +71,7 @@ impl Texture {
         image: &DynamicImage,
         label: Option<&str>,
     ) -> anyhow::Result<Self> {
-        let rgba = image
-            .as_rgba8()
-            .expect("image might not have an alpha component. Did you use a png?");
+        let rgba = image.to_rgba8();
 
         let dimensions = image.dimensions();
 
@@ -97,7 +97,7 @@ impl Texture {
                 mip_level: 0,
                 origin: Origin3d::ZERO,
             },
-            rgba,
+            &rgba,
             TextureDataLayout {
                 offset: 0,
                 bytes_per_row: 4 * dimensions.0,
@@ -108,9 +108,9 @@ impl Texture {
 
         let view = texture.create_view(&TextureViewDescriptor::default());
         let sampler = device.create_sampler(&SamplerDescriptor {
-            address_mode_u: AddressMode::ClampToEdge,
-            address_mode_v: AddressMode::ClampToEdge,
-            address_mode_w: AddressMode::ClampToEdge,
+            address_mode_u: AddressMode::Repeat,
+            address_mode_v: AddressMode::Repeat,
+            address_mode_w: AddressMode::Repeat,
             mag_filter: FilterMode::Nearest,
             min_filter: FilterMode::Nearest,
             mipmap_filter: FilterMode::Linear,

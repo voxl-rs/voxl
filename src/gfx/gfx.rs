@@ -1,44 +1,56 @@
-use super::{instance, texture, uniforms::Uniforms, vertex::Vertex};
+use super::{
+    instance,
+    model::*,
+    texture,
+    uniforms::Uniforms,
+    vertex::{TexVertex, Vertex},
+};
 
-use bytemuck::Pod;
 use cgmath::{Quaternion, Vector3};
-use futures::executor::block_on;
-use rand::Rng;
 use wgpu::{util::DeviceExt, *};
-use winit::dpi::PhysicalSize;
-use winit::window::Window;
+use winit::{dpi::PhysicalSize, window::Window};
 
-pub const VERTICES: &[Vertex] = &[
+pub const VERTICES_FACE: &[TexVertex] = &[
     // Top
-    Vertex::new([-0.5, 0.5, -0.5], [0., 0.]), // 0
-    Vertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 1
-    Vertex::new([-0.5, 0.5, 0.5], [0., 1.]),  // 2
-    Vertex::new([0.5, 0.5, 0.5], [1., 1.]),   // 3
+    TexVertex::new([-0.5, 0.5, -0.5], [0., 0.]), // 0
+    TexVertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 1
+    TexVertex::new([-0.5, 0.5, 0.5], [0., 1.]),  // 2
+    TexVertex::new([0.5, 0.5, 0.5], [1., 1.]),   // 3
+];
+
+pub const INDICE_FACE: &[u16] = &[1, 0, 2, 2, 3, 1];
+
+pub const VERTICES: &[TexVertex] = &[
+    // Top
+    TexVertex::new([-0.5, 0.5, -0.5], [0., 0.]), // 0
+    TexVertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 1
+    TexVertex::new([-0.5, 0.5, 0.5], [0., 1.]),  // 2
+    TexVertex::new([0.5, 0.5, 0.5], [1., 1.]),   // 3
     // Bottom
-    Vertex::new([-0.5, -0.5, -0.5], [1., 0.]), // 4
-    Vertex::new([0.5, -0.5, -0.5], [0., 0.]),  // 5
-    Vertex::new([-0.5, -0.5, 0.5], [1., 1.]),  // 6
-    Vertex::new([0.5, -0.5, 0.5], [0., 1.]),   // 7
+    TexVertex::new([-0.5, -0.5, -0.5], [1., 0.]), // 4
+    TexVertex::new([0.5, -0.5, -0.5], [0., 0.]),  // 5
+    TexVertex::new([-0.5, -0.5, 0.5], [1., 1.]),  // 6
+    TexVertex::new([0.5, -0.5, 0.5], [0., 1.]),   // 7
     // Front
-    Vertex::new([-0.5, 0.5, 0.5], [0., 0.]),  // 8
-    Vertex::new([0.5, 0.5, 0.5], [1., 0.]),   // 9
-    Vertex::new([-0.5, -0.5, 0.5], [0., 1.]), // 10
-    Vertex::new([0.5, -0.5, 0.5], [1., 1.]),  // 11
+    TexVertex::new([-0.5, 0.5, 0.5], [0., 0.]),  // 8
+    TexVertex::new([0.5, 0.5, 0.5], [1., 0.]),   // 9
+    TexVertex::new([-0.5, -0.5, 0.5], [0., 1.]), // 10
+    TexVertex::new([0.5, -0.5, 0.5], [1., 1.]),  // 11
     // Back
-    Vertex::new([-0.5, 0.5, -0.5], [1., 0.]),  // 12
-    Vertex::new([0.5, 0.5, -0.5], [0., 0.]),   // 13
-    Vertex::new([-0.5, -0.5, -0.5], [1., 1.]), // 14
-    Vertex::new([0.5, -0.5, -0.5], [0., 1.]),  // 15
+    TexVertex::new([-0.5, 0.5, -0.5], [1., 0.]),  // 12
+    TexVertex::new([0.5, 0.5, -0.5], [0., 0.]),   // 13
+    TexVertex::new([-0.5, -0.5, -0.5], [1., 1.]), // 14
+    TexVertex::new([0.5, -0.5, -0.5], [0., 1.]),  // 15
     // Right
-    Vertex::new([0.5, 0.5, 0.5], [0., 0.]),   // 16
-    Vertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 17
-    Vertex::new([0.5, -0.5, 0.5], [0., 1.]),  // 18
-    Vertex::new([0.5, -0.5, -0.5], [1., 1.]), // 19
+    TexVertex::new([0.5, 0.5, 0.5], [0., 0.]),   // 16
+    TexVertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 17
+    TexVertex::new([0.5, -0.5, 0.5], [0., 1.]),  // 18
+    TexVertex::new([0.5, -0.5, -0.5], [1., 1.]), // 19
     // Left
-    Vertex::new([-0.5, 0.5, -0.5], [0., 0.]),  // 20
-    Vertex::new([-0.5, 0.5, 0.5], [1., 0.]),   // 21
-    Vertex::new([-0.5, -0.5, -0.5], [0., 1.]), // 22
-    Vertex::new([-0.5, -0.5, 0.5], [1., 1.]),  // 23
+    TexVertex::new([-0.5, 0.5, -0.5], [0., 0.]),  // 20
+    TexVertex::new([-0.5, 0.5, 0.5], [1., 0.]),   // 21
+    TexVertex::new([-0.5, -0.5, -0.5], [0., 1.]), // 22
+    TexVertex::new([-0.5, -0.5, 0.5], [1., 1.]),  // 23
 ];
 
 #[rustfmt::skip]
@@ -50,14 +62,6 @@ pub const INDICES: &[u16] = &[
     17, 16, 18, 18, 19, 17,
     21, 20, 22, 22, 23, 21,
 ];
-
-const NUM_INSTANCES_PER_ROW: u32 = 5; //10
-pub const NUM_INSTANCES: u32 = NUM_INSTANCES_PER_ROW * NUM_INSTANCES_PER_ROW;
-const _INSTANCE_DISPLACEMENT: Vector3<f32> = cgmath::Vector3::new(
-    NUM_INSTANCES_PER_ROW as f32 * 2., //0.5
-    0.0,
-    NUM_INSTANCES_PER_ROW as f32 * 2.,
-);
 
 #[derive(Debug)]
 pub struct RenderBunch {
@@ -84,11 +88,14 @@ pub fn swap_chain(window_size: &PhysicalSize<u32>) -> SwapChainDescriptor {
         format: TextureFormat::Bgra8UnormSrgb,
         width: window_size.width,
         height: window_size.height,
-        present_mode: PresentMode::Fifo,
+        present_mode: PresentMode::Mailbox,
     }
 }
+
 impl Render {
     pub fn new(backend: BackendBit, window: &Window) -> Self {
+        use futures::executor::block_on;
+
         let instance = Instance::new(backend);
         let surface = unsafe { instance.create_surface(window) };
 
@@ -115,7 +122,7 @@ impl Render {
         }
     }
 
-    pub fn init_buffer<A: Default + Pod>(
+    pub fn init_buffer<A: Default + bytemuck::Pod>(
         &self,
         label: Option<&'static str>,
         usage: BufferUsage,
@@ -128,7 +135,7 @@ impl Render {
     }
 
     pub fn bunch(&self, sc_desc: &SwapChainDescriptor) -> RenderBunch {
-        let diffuse_bytes = include_bytes!("../../assets/hyper_cube_stone.png");
+        let diffuse_bytes = include_bytes!("../../assets/hyper_cube_magma2.png");
         let diffuse_texture = texture::Texture::from_bytes(
             &self.device,
             &self.queue,
@@ -178,7 +185,6 @@ impl Render {
             label: Some("texture_bind_group"),
         });
 
-        // ----------
         let uniform_buff = self.init_buffer::<Uniforms>(
             Some("Uniform Buffer"),
             BufferUsage::UNIFORM | BufferUsage::COPY_DST,
@@ -212,6 +218,7 @@ impl Render {
         let vs_module = self
             .device
             .create_shader_module(include_spirv!("../../shaders/shader.vert.spv"));
+
         let fs_module = self
             .device
             .create_shader_module(include_spirv!("../../shaders/shader.frag.spv"));
@@ -260,7 +267,11 @@ impl Render {
                 }),
                 vertex_state: VertexStateDescriptor {
                     index_format: IndexFormat::Uint16,
-                    vertex_buffers: &[Vertex::vb_desc(), instance::InstanceRaw::vb_desc()],
+                    vertex_buffers: &[
+                        TexVertex::vb_desc(),
+                        instance::InstanceRaw::vb_desc(),
+                        //ModelVertex::vb_desc(),
+                    ],
                 },
                 sample_count: 1,
                 sample_mask: !0,
@@ -279,10 +290,10 @@ impl Render {
             usage: BufferUsage::INDEX,
         });
 
-        let instance_data = create_instances()
+        let instance_data: Vec<instance::InstanceRaw> = create_chunk()
             .iter()
             .map(|i| instance::InstanceRaw::from(*i))
-            .collect::<Vec<_>>();
+            .collect();
 
         let instance_buff = self.device.create_buffer_init(&util::BufferInitDescriptor {
             label: Some("Instance Buffer"),
@@ -303,54 +314,198 @@ impl Render {
     }
 }
 
-fn create_instances() -> Vec<instance::Instance> {
-    let mut res: Vec<instance::Instance> = Vec::with_capacity(16 * 16 * 16);
+use crate::chunk::{Accessor, Chunk};
+fn create_chunk() -> Vec<instance::Instance> {
+    const SEED: f64 = 347_510_572.;
+    const SMOOTHING: f64 = 0.05;
+    use noise::NoiseFn;
+    let noise = noise::OpenSimplex::new();
 
-    let mut rng = rand::thread_rng();
-    for k in -4..4 {
-        for j in -8..0 {
-            for i in -4..4 {
-                if rng.gen_range::<f32, f32, f32>(0., 1.) > 0.30f32 {
-                    res.push(instance::Instance {
-                        position: Vector3::new(i as f32, j as f32, k as f32),
-                        rotation: quat_identity(),
-                    });
-                }
-            }
+    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+    struct Dimensions;
+    impl Accessor for Dimensions {
+        const SIDE_LEN: usize = 16;
+    }
+
+    let mut c: Chunk<Dimensions, bool, 4096> = Chunk::default();
+
+    for i in 0..4096 {
+        let [y, x, z] = Dimensions::from_index(i);
+        print!("y: {}, x: {}, z: {} ", y, x, z);
+        let val = noise
+            .get([
+                y as f64 * SMOOTHING,
+                x as f64 * SMOOTHING,
+                z as f64 * SMOOTHING,
+                SEED,
+            ])
+            .abs();
+
+        println!("val: {}", val);
+
+        if val < 0.03 {
+            c[[y, x, z]] = true;
         }
     }
+
+    let mut res: Vec<instance::Instance> = Vec::with_capacity(4096);
+    for i in 0..4096 {
+        let [y, x, z] = Dimensions::from_index(i);
+
+        if c[[y, x, z]] {
+            res.push(instance::Instance {
+                position: Vector3::new(x as f32, y as f32, z as f32),
+                rotation: quat_identity(),
+            });
+            /*
+            if y == 0 {
+                if !c[[y + 1, x, z]] {
+                    res.push(bottom([y, x, z]));
+                }
+                res.push(top([y + 1, x, z]));
+            } else if y == 15 {
+                if !c[[y - 1, x, z]] {
+                    res.push(top([y, x, z]));
+                }
+            } else {
+                if !c[[y + 1, x, z]] {
+                    res.push(bottom([y, x, z]));
+                }
+                if !c[[y - 1, x, z]] {
+                    res.push(top([y, x, z]));
+                }
+            }
+
+            if x == 0 {
+                if !c[[y, x + 1, z]] {
+                    res.push(right([y, x, z]));
+                }
+            } else if x == 15 {
+                if !c[[y, x - 1, z]] {
+                    res.push(left([y, x, z]));
+                }
+            } else {
+                if !c[[y, x + 1, z]] {
+                    res.push(right([y, x, z]));
+                }
+                if !c[[y, x - 1, z]] {
+                    res.push(left([y, x, z]));
+                }
+            }
+
+            if z == 0 {
+                if !c[[y, x, z + 1]] {
+                    res.push(front([y, x, z]));
+                }
+            } else if z == 15 {
+                if !c[[y, x, z - 1]] {
+                    res.push(back([y, x, z]));
+                }
+            } else {
+                if !c[[y, x, z + 1]] {
+                    res.push(front([y, x, z]));
+                }
+                if !c[[y, x, z - 1]] {
+                    res.push(back([y, x, z]));
+                }
+            }
+            */
+        }
+    }
+
+    log::info!("generated chunk: {:?}", c);
+    /*
+    let mut c = create_instances([0, 0, 0]);
+    c.extend(create_instances([1, 0, 0]));
+    c.extend(create_instances([-1, 0, 0]));
+    */
     res
 }
 
-fn _create_instances() -> Vec<instance::Instance> {
-    (0..NUM_INSTANCES_PER_ROW)
-        .flat_map(|z| {
-            (0..NUM_INSTANCES_PER_ROW).map(move |x| {
-                let position = cgmath::Vector3 {
-                    x: x as f32,
-                    y: 0.0,
-                    z: z as f32,
-                } - _INSTANCE_DISPLACEMENT;
+use cgmath::Rotation;
 
-                /*
-                                let rotation = if position.is_zero() {
-                                    // this is needed so an object at (0, 0, 0) won't get scaled to zero
-                                    // as Quaternions can effect scale if they're not created correctly
-                                    cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0))
-                                } else {
-                                    cgmath::Quaternion::from_axis_angle(
-                                        position.clone().normalize(),
-                                        cgmath::Deg(45.0),
-                                    )
-                                };
-                */
-                instance::Instance {
-                    position,
-                    rotation: quat_identity(),
-                }
-            })
-        })
-        .collect::<Vec<_>>()
+fn top([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: quat_identity(),
+    }
+}
+
+fn bottom([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(0., -1., 0.)),
+    }
+}
+
+fn right([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(-1., 0., 0.)),
+    }
+}
+
+fn left([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(1., 0., 0.)),
+    }
+}
+
+fn front([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 1., 0.), Vector3::new(0., 0., -1.)),
+    }
+}
+
+fn back([y, x, z]: [usize; 3]) -> instance::Instance {
+    instance::Instance {
+        position: Vector3::new(y as f32, x as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., -1., 0.), Vector3::new(0., 0., 1.)),
+    }
+}
+
+fn create_instances([y, x, z]: [i32; 3]) -> Vec<instance::Instance> {
+    let mut res: Vec<instance::Instance> = Vec::with_capacity(1);
+
+    // Top
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: quat_identity(),
+    });
+
+    // Botton
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(0., -1., 0.)),
+    });
+
+    // Front?
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 1., 0.), Vector3::new(0., 0., -1.)),
+    });
+
+    // Back
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., -1., 0.), Vector3::new(0., 0., 1.)),
+    });
+
+    // Right
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(-1., 0., 0.)),
+    });
+
+    // Left
+    res.push(instance::Instance {
+        position: Vector3::new(x as f32, y as f32, z as f32),
+        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(1., 0., 0.)),
+    });
+
+    res
 }
 
 fn quat_identity() -> Quaternion<f32> {
