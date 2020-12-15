@@ -2,9 +2,11 @@
     <h1>Voxl 🧊</h1>
     <img height=20 alt="Open Source" src="https://forthebadge.com/images/badges/open-source.svg">
     <img height=20 alt="Built with ❤" src="https://forthebadge.com/images/badges/made-with-rust.svg">
-    <br>
     <a href="https://github.com/voxl-rs/voxl/actions">
-        <img height=20 alt="Workflow Status" src="https://img.shields.io/github/workflow/status/voxl-rs/voxl/Rust?style=for-the-badge">
+        <img height=20 alt="Workflow Status" src="https://img.shields.io/github/workflow/status/voxl-rs/voxl/Rust?style=flat">
+    </a>
+    <a href="https://deps.rs/repo/github/voxl-rs/voxl">
+        <img height=20 alt="Workflow Status" src="https://deps.rs/repo/github/voxl-rs/voxl/status.svg">
     </a>
     <br>
     <br>
@@ -32,3 +34,4 @@ $ cargo run --example nether
 <div align="center">
     <img height=20 alt="Built with ❤" src="https://forthebadge.com/images/badges/built-with-love.svg">
 </div>
+
