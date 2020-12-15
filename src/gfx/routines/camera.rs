@@ -9,11 +9,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Cam;
 impl Routine for Cam {
-    fn setup(
-        _: &mut World,
-        resources: &mut Resources,
-        schedule: &mut Builder,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn setup(_: &mut World, resources: &mut Resources, schedule: &mut Builder) {
         let sc_desc = {
             resources.get::<SwapChainDescriptor>().expect(
             "SwapChainDescriptor does not exist in Resources, please insert SwapChainDescriptor.",
@@ -35,7 +31,5 @@ impl Routine for Cam {
         schedule.add_system(camera_system(ResourceIfChanged::new(
             Matrix4::<f32>::identity(),
         )));
-
-        Ok(())
     }
 }

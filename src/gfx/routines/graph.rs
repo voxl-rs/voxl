@@ -19,11 +19,7 @@ use super::sys::{event_loop::event_loop_system, render::render_system};
 #[derive(Debug)]
 pub struct Graph;
 impl Routine for Graph {
-    fn setup(
-        _: &mut World,
-        mut resources: &mut Resources,
-        schedule: &mut Builder,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn setup(_: &mut World, mut resources: &mut Resources, schedule: &mut Builder) {
         let event_loop = EventLoop::new();
         let window = Window::new(&event_loop).expect("unable to create winit window.");
 
@@ -53,7 +49,5 @@ impl Routine for Graph {
         log::debug!("resource loaded -> DrawFrame");
 
         schedule.add_system(render_system(render, render_bunch));
-
-        Ok(())
     }
 }

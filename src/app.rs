@@ -21,9 +21,9 @@ impl AppBuilder {
         }
     }
 
-    pub fn with_routine<T: Routine>(mut self) -> Result<Self, Box<dyn std::error::Error>> {
-        T::setup(&mut self.world, &mut self.resources, &mut self.schedule)?;
-        Ok(self)
+    pub fn routine<T: Routine>(mut self) -> Self {
+        T::setup(&mut self.world, &mut self.resources, &mut self.schedule);
+        self
     }
 }
 
@@ -34,11 +34,7 @@ impl Default for AppBuilder {
         builder.resources.insert(ResumeApp::default());
         log::debug!("resource loaded -> ResumeApp");
 
-        builder
-            .with_routine::<Graph>()
-            .expect("unable to initiate graphics")
-            .with_routine::<Cam>()
-            .expect("unable to initiate camera")
+        builder.routine::<Graph>().routine::<Cam>()
     }
 }
 
@@ -82,11 +78,7 @@ impl App {
 }
 
 pub trait Routine {
-    fn setup(
-        world: &mut World,
-        resources: &mut Resources,
-        schedule: &mut Builder,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    fn setup(world: &mut World, resources: &mut Resources, schedule: &mut Builder);
 }
 
 /// A resource that decides whether

@@ -111,7 +111,7 @@ pub fn render(
 
             pass.set_index_buffer(index_buff.slice(..));
 
-            pass.draw_indexed(0..*num_indices, 0, 0..(64 * 64 * 64 * 2));
+            pass.draw_indexed(0..*num_indices, 0, 0..4096);
         }
 
         queue.submit(std::iter::once(encoder.finish()));
