@@ -30,7 +30,7 @@ ron = "0.6"
 # Graph
 winit = "0.24"
 wgpu = { version = "0.6", features = ["vulkan-portability"] }
-image = "0.23"
+image = "0.23.12"
 
 # Math
 cgmath = "0.17"
