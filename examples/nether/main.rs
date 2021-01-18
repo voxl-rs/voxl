@@ -1,16 +1,18 @@
 use voxl::{
-    app::{AppBuilder, ResumeApp, Routine},
+    app::{AppBuilder, ResumeApp},
     chunk::Accessor,
     core::{
         ecs::{systems::Builder, *},
-        events::{register_reader_from_resource, EventChannel, ReaderId},
-        Input,
+        events::{self, EventChannel, ReaderId},
+        input_event::{self, *},
     },
-    gfx::camera::{Camera, Projection, ProjectionExt},
+    gfx::{
+        camera::{Camera, Projection, ProjectionExt},
+        CanvasManager, Resolution, WindowManager,
+    },
     math::cg::{Deg, InnerSpace, Point3, Rad, Vector3},
-    time::DeltaTime,
+    time::{DeltaTime, TpsCounter},
 };
-use winit::event::{ElementState, KeyboardInput, VirtualKeyCode};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct ChunkDimensions;
@@ -32,36 +34,38 @@ impl Default for Blocks {
 
 fn main() {
     env_logger::init();
-    let builder = AppBuilder::default();
-    let mut app = builder.routine::<MyChonk>().build(8);
+    let mut app = AppBuilder::default().routine_fn(setup_cam).build();
 
     app.run();
 }
 
-#[derive(Debug)]
-pub struct MyChonk;
-impl Routine for MyChonk {
-    fn setup(world: &mut World, mut resources: &mut Resources, schedule: &mut Builder) {
-        world.push((
-            Camera::new(Deg(-90f32), Deg(-20f32)),
-            Point3::<f32>::new(0., 0., 10.),
-        ));
+fn setup_cam(w: &mut World, mut r: &mut Resources, b: &mut Builder) {
+    let win = get_expect::<WindowManager>(&r).add_window(|w| w);
+    let res = Resolution::from(win.inner_size());
 
-        schedule.add_system(play_system(
-            DeltaTime::default(),
-            register_reader_from_resource::<Input>(&mut resources),
-            MovementBindings::new(
-                VirtualKeyCode::Space,
-                VirtualKeyCode::LShift,
-                VirtualKeyCode::A,
-                VirtualKeyCode::D,
-                VirtualKeyCode::W,
-                VirtualKeyCode::S,
-                VirtualKeyCode::Up,
-                VirtualKeyCode::Down,
-            ),
-        ));
-    }
+    let canvas = get_expect::<CanvasManager>(&r).from_win(&win);
+
+    w.push((win, canvas, res, TpsCounter::default())); // Pushed Window
+
+    w.push((
+        Camera::new(Deg(-90f32), Deg(-20f32)),
+        Point3::<f32>::new(0., 0., 10.),
+    ));
+
+    b.add_system(play_system(
+        DeltaTime::default(),
+        events::new_reader::<Input>(&mut r),
+        MovementBindings::new(
+            VirtualKeyCode::Space,
+            VirtualKeyCode::LShift,
+            VirtualKeyCode::A,
+            VirtualKeyCode::D,
+            VirtualKeyCode::W,
+            VirtualKeyCode::S,
+            VirtualKeyCode::Up,
+            VirtualKeyCode::Down,
+        ),
+    ));
 }
 
 const SPEED: f64 = 5.;
@@ -78,37 +82,28 @@ fn play(
     cam: &mut Camera,
     translation: &mut Point3<f32>,
 ) {
-    for event in ev_channel.read(&mut reader_id) {
-        match event {
-            Input::Key(KeyboardInput {
-                scancode: _,
-                state: _,
-                virtual_keycode: Some(VirtualKeyCode::Escape),
-                ..
-            }) => {
-                resume.end();
-                log::warn!("shutting down");
-            }
+    for input in ev_channel.read(&mut reader_id) {
+        if let Some(key) = input.key() {
+            use input_event::KeyState::*;
+            use VirtualKeyCode::*;
 
-            Input::Key(KeyboardInput {
-                scancode: _,
-                state,
-                virtual_keycode: Some(key),
-                ..
-            }) => {
-                if *state == ElementState::Released {
-                    movement_binding.released(*key)
-                } else {
-                    movement_binding.pressed(*key)
+            match key {
+                Pressed(Escape) => {
+                    resume.end();
+                    log::warn!("shutting down!");
                 }
-            }
+                Pressed(key_code) => movement_binding.pressed(key_code),
+                Released(key_code) => movement_binding.released(key_code),
 
-            Input::MouseDelta(x, y) => cam.orient(
+                _ => {}
+            }
+        } else if let Input::MouseDelta(x, y) = input {
+            log::info!("mouse: {:?}", (x, y));
+
+            cam.orient(
                 Rad((*x * MOUSE_SPEED * delta_time.elapsed()) as f32),
                 Rad((-*y * MOUSE_SPEED * delta_time.elapsed()) as f32),
-            ),
-
-            _ => {}
+            );
         }
     }
 

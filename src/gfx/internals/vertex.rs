@@ -39,6 +39,7 @@ pub struct TexVertex {
 }
 
 impl TexVertex {
+    #[allow(dead_code)]
     pub const fn new(position: [f32; 3], tex_coords: [f32; 2]) -> Self {
         Self {
             position,

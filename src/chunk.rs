@@ -1,40 +1,112 @@
+use cgmath::Point3;
 use std::{
     fmt::Debug,
     hash::Hash,
     marker::PhantomData,
     ops::{Index, IndexMut},
+    slice::{Iter, IterMut},
 };
 
-/// Generic chunk data
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-pub struct Chunk<Dimensions: Accessor, BlockData: Unit, const ELEMENT_COUNT: usize> {
-    data: [BlockData; ELEMENT_COUNT],
-    state: PhantomData<Dimensions>,
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct ChunkVec<T: Unit, A: Accessor> {
+    data: Vec<T>,
+    state: PhantomData<A>,
 }
 
-impl<D: Accessor, T: Unit, const N: usize> Chunk<D, T, N> {
-    pub fn iter_slice(&self) -> std::slice::Iter<'_, T> {
-        self.data.iter()
-    }
-
-    pub fn iter_slice_mut(&mut self) -> std::slice::IterMut<'_, T> {
-        self.data.iter_mut()
-    }
-
-    /// Reassigns a new Accessor data for query
-    pub fn new_accessor<A: Accessor>(self) -> Chunk<A, T, N> {
-        Chunk {
-            data: self.data,
+impl<A: Accessor, T: Unit> ChunkVec<T, A> {
+    pub fn with_capacity(size: usize) -> Self {
+        Self {
+            data: Vec::with_capacity(size),
             state: PhantomData::default(),
         }
     }
 }
 
-impl<D: Accessor, T: Unit, const N: usize> Default for Chunk<D, T, N> {
+impl<A: Accessor, T: Unit> Index<[usize; 3]> for ChunkVec<T, A> {
+    type Output = T;
+
+    fn index(&self, pos: [usize; 3]) -> &Self::Output {
+        &self.data[A::to_index(pos)]
+    }
+}
+
+impl<A: Accessor, T: Unit> IndexMut<[usize; 3]> for ChunkVec<T, A> {
+    fn index_mut(&mut self, pos: [usize; 3]) -> &mut Self::Output {
+        &mut self.data[A::to_index(pos)]
+    }
+}
+
+impl<A: Accessor, T: Unit, const N: usize> From<Chunk<A, T, N>> for ChunkVec<T, A> {
+    fn from(c: Chunk<A, T, N>) -> Self {
+        Self {
+            data: c.data.into(),
+            state: PhantomData::default(),
+        }
+    }
+}
+
+/// Generic chunk data
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub struct Chunk<A: Accessor, T: Unit, const N: usize> {
+    data: [T; N],
+    state: PhantomData<A>,
+}
+
+impl<A: Accessor, T: Unit, const N: usize> From<[T; N]> for Chunk<A, T, N> {
+    fn from(data: [T; N]) -> Self {
+        Self {
+            data,
+            state: PhantomData::default(),
+        }
+    }
+}
+
+impl<A: Accessor, T: Unit, const N: usize> Chunk<A, T, N> {
+    pub fn iter_slice(&self) -> Iter<'_, T> {
+        self.data.iter()
+    }
+
+    pub fn iter_slice_mut(&mut self) -> IterMut<'_, T> {
+        self.data.iter_mut()
+    }
+
+    /// Mesh
+    pub fn mesh<F: Fn(&T) -> bool>(&self, f: F) {
+        use std::collections::HashSet;
+        let data = self
+            .iter_slice()
+            .enumerate()
+            .flat_map(|(i, b)| {
+                if f(b) {
+                    let [y, x, z] = A::from_index(i);
+
+                    return vec![
+                        Point3::new(y, x, z),
+                        Point3::new(y, x + 1, z),
+                        Point3::new(y, x + 1, z + 1),
+                        Point3::new(y, x, z + 1),
+                        //
+                        Point3::new(y + 1, x, z),
+                        Point3::new(y + 1, x + 1, z),
+                        Point3::new(y + 1, x + 1, z + 1),
+                        Point3::new(y + 1, x, z + 1),
+                    ];
+                }
+
+                vec![]
+            })
+            .collect::<HashSet<Point3<usize>>>();
+
+        log::debug!("Generated Points: {:?}", data);
+        println!("Generated Points: {:?}", data);
+    }
+}
+
+impl<A: Accessor, T: Unit, const N: usize> Default for Chunk<A, T, N> {
     fn default() -> Self {
         Self {
             data: [T::default(); N],
-            state: std::marker::PhantomData::default(),
+            ..Default::default()
         }
     }
 }
@@ -47,18 +119,32 @@ impl<D: Accessor, T: Unit, const N: usize> ShallowCopy for Chunk<D, T, N> {
     }
 }
 
-impl<D: Accessor, T: Unit, const N: usize> Index<[usize; 3]> for Chunk<D, T, N> {
+impl<A: Accessor, T: Unit, const N: usize> Index<[usize; 3]> for Chunk<A, T, N> {
     type Output = T;
 
-    fn index(&self, [y, x, z]: [usize; 3]) -> &Self::Output {
-        &self.data[y * D::QUAD_LEN + x + z * D::SIDE_LEN]
+    fn index(&self, pos: [usize; 3]) -> &Self::Output {
+        &self.data[A::to_index(pos)]
     }
 }
 
-impl<D: Accessor, T: Unit, const N: usize> IndexMut<[usize; 3]> for Chunk<D, T, N> {
-    fn index_mut(&mut self, [y, x, z]: [usize; 3]) -> &mut Self::Output {
-        &mut self.data[y * D::QUAD_LEN + x + z * D::SIDE_LEN]
+impl<A: Accessor, T: Unit, const N: usize> IndexMut<[usize; 3]> for Chunk<A, T, N> {
+    fn index_mut(&mut self, pos: [usize; 3]) -> &mut Self::Output {
+        &mut self.data[A::to_index(pos)]
     }
+}
+
+pub trait ChunkPlots: Accessor {
+    const SIDE_VERT: usize;
+    const NUM_VERTS: usize = Self::SIDE_VERT * Self::SIDE_VERT * Self::SIDE_VERT;
+}
+
+impl<A: Accessor> ChunkPlots for A {
+    const SIDE_VERT: usize = A::SIDE_LEN + 1;
+}
+
+pub trait ChunkWireFrame: ChunkPlots {
+    fn indices() -> Vec<u16>;
+    fn vertices() -> Vec<u16>;
 }
 
 /// Used for tracking Chunk Dimensions.
@@ -81,6 +167,11 @@ pub trait Accessor: Clone + Copy + Eq + std::hash::Hash {
 
         [y, x, z]
     }
+
+    #[inline(always)]
+    fn to_index([y, x, z]: [usize; 3]) -> usize {
+        y * Self::QUAD_LEN + x + z * Self::SIDE_LEN
+    }
 }
 
 /// Ideal type to represent each chunk element for safely working with ECS
@@ -92,21 +183,6 @@ pub trait Unit:
 impl<T> Unit for T where
     T: 'static + Debug + Default + Clone + Copy + Send + Sync + Eq + std::hash::Hash
 {
-}
-
-#[test]
-fn testing() {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    struct Data;
-
-    impl Accessor for Data {
-        const SIDE_LEN: usize = 8;
-    }
-
-    let mut chunk: Chunk<Data, u32, 512> = Chunk::default();
-    chunk[[7, 7, 7]] = 100;
-
-    assert_eq!(chunk[[7, 7, 7]], 100);
 }
 
 #[derive(Debug)]
@@ -130,33 +206,3 @@ impl<D: Accessor, T: Unit, const N: usize> Iterator for ChunkFlatIter<D, T, N> {
         None
     }
 }
-
-#[test]
-fn testing2() {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    struct Data;
-
-    impl Accessor for Data {
-        const SIDE_LEN: usize = 1;
-    }
-
-    let mut chunk: Chunk<Data, u32, 1> = Chunk::default();
-    chunk[[0, 0, 0]] = 1;
-
-    assert_eq!(chunk[[0, 0, 0]], 1);
-}
-
-/*
-use evmap::{ReadHandle, WriteHandle};
-
-#[test]
-fn yes() {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-    struct Data;
-    impl Accessor for Data {
-        const SIDE_LEN: usize = 8;
-    }
-
-    let (r, w) = evmap::new::<u8, Chunk<Data, u8, 512>>();
-}
-*/

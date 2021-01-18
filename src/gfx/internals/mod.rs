@@ -1,26 +1,12 @@
-use super::{
-    instance,
-    model::*,
-    texture,
-    uniforms::Uniforms,
-    vertex::{TexVertex, Vertex},
-};
+pub mod instance;
+pub mod texture;
+pub mod vertex;
+// pub mod model;
+// pub mod uniforms;
 
-use cgmath::{Quaternion, Vector3};
-use wgpu::{util::DeviceExt, *};
-use winit::{dpi::PhysicalSize, window::Window};
+use vertex::TexVertex;
 
-pub const VERTICES_FACE: &[TexVertex] = &[
-    // Top
-    TexVertex::new([-0.5, 0.5, -0.5], [0., 0.]), // 0
-    TexVertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 1
-    TexVertex::new([-0.5, 0.5, 0.5], [0., 1.]),  // 2
-    TexVertex::new([0.5, 0.5, 0.5], [1., 1.]),   // 3
-];
-
-pub const INDICE_FACE: &[u16] = &[1, 0, 2, 2, 3, 1];
-
-pub const VERTICES: &[TexVertex] = &[
+pub const _VERTICES: &[TexVertex] = &[
     // Top
     TexVertex::new([-0.5, 0.5, -0.5], [0., 0.]), // 0
     TexVertex::new([0.5, 0.5, -0.5], [1., 0.]),  // 1
@@ -54,7 +40,7 @@ pub const VERTICES: &[TexVertex] = &[
 ];
 
 #[rustfmt::skip]
-pub const INDICES: &[u16] = &[
+pub const _INDICES: &[u16] = &[
     1, 0, 2, 2, 3, 1,
     6, 4, 5, 5, 7, 6,
     9, 8, 10, 10, 11, 9,
@@ -63,6 +49,39 @@ pub const INDICES: &[u16] = &[
     21, 20, 22, 22, 23, 21,
 ];
 
+/*
+pub fn begin_single_pass<F: FnMut(&mut RenderPass)>(
+    &self,
+    mut f: F,
+    label: &'static str,
+    frame: &TextureView,
+    canvas: &Canvas,
+) -> CommandBuffer {
+    let mut encoder = self
+        .device
+        .create_command_encoder(&CommandEncoderDescriptor { label: Some(label) });
+
+    {
+        let mut pass = encoder.begin_render_pass(&RenderPassDescriptor {
+            color_attachments: &[RenderPassColorAttachmentDescriptor {
+                attachment: frame,
+                resolve_target: None,
+                ops: Operations {
+                    load: LoadOp::Clear(canvas.clear_color),
+                    store: true,
+                },
+            }],
+            depth_stencil_attachment: None,
+        });
+
+        f(&mut pass);
+    }
+
+    encoder.finish()
+}
+*/
+
+/*
 #[derive(Debug)]
 pub struct RenderBunch {
     pub pipeline: RenderPipeline, //
@@ -74,7 +93,9 @@ pub struct RenderBunch {
     pub instance_buff: Buffer,
     pub num_indices: u32, //
 }
+*/
 
+/*
 #[derive(Debug)]
 pub struct Render {
     pub surface: Surface,
@@ -82,21 +103,19 @@ pub struct Render {
     pub queue: Queue,
 }
 
-pub fn swap_chain(window_size: &PhysicalSize<u32>) -> SwapChainDescriptor {
-    SwapChainDescriptor {
-        usage: TextureUsage::OUTPUT_ATTACHMENT,
-        format: TextureFormat::Bgra8UnormSrgb,
-        width: window_size.width,
-        height: window_size.height,
-        present_mode: PresentMode::Mailbox,
-    }
-}
 
 impl Render {
     pub fn new(backend: BackendBit, window: &Window) -> Self {
         use futures::executor::block_on;
 
         let instance = Instance::new(backend);
+        log::info!(
+            "available adapters: {:#?}",
+            instance
+                .enumerate_adapters(BackendBit::all())
+                .collect::<Vec<Adapter>>()
+        );
+
         let surface = unsafe { instance.create_surface(window) };
 
         let adapter = block_on(instance.request_adapter(&RequestAdapterOptions {
@@ -124,12 +143,35 @@ impl Render {
 
     pub fn init_buffer<A: Default + bytemuck::Pod>(
         &self,
-        label: Option<&'static str>,
+        label: &'static str,
+        usage: BufferUsage,
+    ) -> Buffer {
+        self.init_buffer_val(label, &[A::default()], usage)
+    }
+
+    pub fn init_buffer_val<A: bytemuck::Pod>(
+        &self,
+        label: &'static str,
+        data: &A,
         usage: BufferUsage,
     ) -> Buffer {
         self.device.create_buffer_init(&util::BufferInitDescriptor {
-            label,
-            contents: bytemuck::cast_slice(&[A::default()]),
+            label: Some(label),
+            contents: bytemuck::cast_slice(&[*data]),
+            usage,
+        })
+    }
+
+    /// Create a buffer from a slice
+    pub fn init_buffer_slice<A: bytemuck::Pod>(
+        &self,
+        label: &'static str,
+        data: &[A],
+        usage: BufferUsage,
+    ) -> Buffer {
+        self.device.create_buffer_init(&util::BufferInitDescriptor {
+            label: Some(label),
+            contents: bytemuck::cast_slice(data),
             usage,
         })
     }
@@ -186,7 +228,7 @@ impl Render {
         });
 
         let uniform_buff = self.init_buffer::<Uniforms>(
-            Some("Uniform Buffer"),
+            "Uniform Buffer",
             BufferUsage::UNIFORM | BufferUsage::COPY_DST,
         );
 
@@ -278,28 +320,14 @@ impl Render {
                 alpha_to_coverage_enabled: false,
             });
 
-        let vertex_buff = self.device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: BufferUsage::VERTEX,
-        });
+        let vertex_buff = self.init_buffer_slice("Vertex Buffer", VERTICES, BufferUsage::VERTEX);
+        let index_buff = self.init_buffer_slice("Index Buffer", INDICES, BufferUsage::INDEX);
 
-        let index_buff = self.device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: BufferUsage::INDEX,
-        });
+        let instance_data: Vec<instance::InstanceRaw> =
+            create_chunk().iter().map(|&i| i.into()).collect();
 
-        let instance_data: Vec<instance::InstanceRaw> = create_chunk()
-            .iter()
-            .map(|i| instance::InstanceRaw::from(*i))
-            .collect();
-
-        let instance_buff = self.device.create_buffer_init(&util::BufferInitDescriptor {
-            label: Some("Instance Buffer"),
-            contents: bytemuck::cast_slice(&instance_data),
-            usage: BufferUsage::VERTEX,
-        });
+        let instance_buff =
+            self.init_buffer_slice("Instance Buffer", &instance_data, BufferUsage::VERTEX);
 
         RenderBunch {
             pipeline,
@@ -315,6 +343,7 @@ impl Render {
 }
 
 use crate::chunk::{Accessor, Chunk};
+
 fn create_chunk() -> Vec<instance::Instance> {
     const SEED: f64 = 347_510_572.;
     const SMOOTHING: f64 = 0.05;
@@ -357,157 +386,14 @@ fn create_chunk() -> Vec<instance::Instance> {
                 position: Vector3::new(x as f32, y as f32, z as f32),
                 rotation: quat_identity(),
             });
-            /*
-            if y == 0 {
-                if !c[[y + 1, x, z]] {
-                    res.push(bottom([y, x, z]));
-                }
-                res.push(top([y + 1, x, z]));
-            } else if y == 15 {
-                if !c[[y - 1, x, z]] {
-                    res.push(top([y, x, z]));
-                }
-            } else {
-                if !c[[y + 1, x, z]] {
-                    res.push(bottom([y, x, z]));
-                }
-                if !c[[y - 1, x, z]] {
-                    res.push(top([y, x, z]));
-                }
-            }
-
-            if x == 0 {
-                if !c[[y, x + 1, z]] {
-                    res.push(right([y, x, z]));
-                }
-            } else if x == 15 {
-                if !c[[y, x - 1, z]] {
-                    res.push(left([y, x, z]));
-                }
-            } else {
-                if !c[[y, x + 1, z]] {
-                    res.push(right([y, x, z]));
-                }
-                if !c[[y, x - 1, z]] {
-                    res.push(left([y, x, z]));
-                }
-            }
-
-            if z == 0 {
-                if !c[[y, x, z + 1]] {
-                    res.push(front([y, x, z]));
-                }
-            } else if z == 15 {
-                if !c[[y, x, z - 1]] {
-                    res.push(back([y, x, z]));
-                }
-            } else {
-                if !c[[y, x, z + 1]] {
-                    res.push(front([y, x, z]));
-                }
-                if !c[[y, x, z - 1]] {
-                    res.push(back([y, x, z]));
-                }
-            }
-            */
         }
     }
 
     log::info!("generated chunk: {:?}", c);
-    /*
-    let mut c = create_instances([0, 0, 0]);
-    c.extend(create_instances([1, 0, 0]));
-    c.extend(create_instances([-1, 0, 0]));
-    */
-    res
-}
-
-use cgmath::Rotation;
-
-fn top([y, x, z]: [usize; 3]) -> instance::Instance {
-    instance::Instance {
-        position: Vector3::new(y as f32, x as f32, z as f32),
-        rotation: quat_identity(),
-    }
-}
-
-fn bottom([y, x, z]: [usize; 3]) -> instance::Instance {
-    instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(0., -1., 0.)),
-    }
-}
-
-fn right([y, x, z]: [usize; 3]) -> instance::Instance {
-    instance::Instance {
-        position: Vector3::new(y as f32, x as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(-1., 0., 0.)),
-    }
-}
-
-fn left([y, x, z]: [usize; 3]) -> instance::Instance {
-    instance::Instance {
-        position: Vector3::new(y as f32, x as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(1., 0., 0.)),
-    }
-}
-
-fn front([y, x, z]: [usize; 3]) -> instance::Instance {
-    instance::Instance {
-        position: Vector3::new(y as f32, x as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 1., 0.), Vector3::new(0., 0., -1.)),
-    }
-}
-
-fn back([y, x, z]: [usize; 3]) -> instance::Instance {
-    instance::Instance {
-        position: Vector3::new(y as f32, x as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., -1., 0.), Vector3::new(0., 0., 1.)),
-    }
-}
-
-fn create_instances([y, x, z]: [i32; 3]) -> Vec<instance::Instance> {
-    let mut res: Vec<instance::Instance> = Vec::with_capacity(1);
-
-    // Top
-    res.push(instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: quat_identity(),
-    });
-
-    // Botton
-    res.push(instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(0., -1., 0.)),
-    });
-
-    // Front?
-    res.push(instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 1., 0.), Vector3::new(0., 0., -1.)),
-    });
-
-    // Back
-    res.push(instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., -1., 0.), Vector3::new(0., 0., 1.)),
-    });
-
-    // Right
-    res.push(instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(-1., 0., 0.)),
-    });
-
-    // Left
-    res.push(instance::Instance {
-        position: Vector3::new(x as f32, y as f32, z as f32),
-        rotation: Quaternion::look_at(Vector3::new(0., 0., 1.), Vector3::new(1., 0., 0.)),
-    });
-
     res
 }
 
 fn quat_identity() -> Quaternion<f32> {
     Quaternion::from_sv(1., Vector3::new(0., 0., 0.))
 }
+*/

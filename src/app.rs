@@ -1,51 +1,76 @@
 /// All you need to get started
-use crate::{
-    core::ecs::{systems::Builder, *},
-    gfx::routines::{Cam, Graph},
-};
+use crate::core::ecs::{systems::Builder, *};
+use rayon::{ThreadPool, ThreadPoolBuilder};
+
+pub const DEFAULT_THREAD_NUM: usize = 8;
 
 pub struct AppBuilder {
     pub world: World,
     pub resources: Resources,
-    pub schedule: Builder,
+    pub builder: Builder,
+    num_threads: usize,
 }
 
 impl AppBuilder {
-    /// An empty builder, this is not recommended as it does not
-    /// contain built in graphics, windowing, and Input event channel
-    pub fn empty() -> Self {
+    /// Application with an empty `World`, and one `ResumeApp` in `Resources`
+    fn empty() -> Self {
+        let mut world = World::default();
+        let mut resources = Resources::default();
+        let mut builder = Schedule::builder();
+
+        resources.insert(ResumeApp::default());
+        log::debug!("`ResumeApp` pushed to `Resources`");
+
+        #[cfg(feature = "gui")]
+        super::gfx::window_event_routine(&mut world, &mut resources, &mut builder);
+
         Self {
-            world: World::default(),
-            resources: Resources::default(),
-            schedule: Builder::default(),
+            world,
+            resources,
+            builder,
+            num_threads: DEFAULT_THREAD_NUM,
         }
     }
 
-    pub fn routine<T: Routine>(mut self) -> Self {
-        T::setup(&mut self.world, &mut self.resources, &mut self.schedule);
+    /// Change the number of threads used, default is `8`
+    pub fn num_threads(mut self, num: usize) -> Self {
+        self.num_threads = num;
         self
     }
-}
 
-impl Default for AppBuilder {
-    fn default() -> Self {
-        let mut builder = Self::empty();
+    pub fn routine<T: Routine>(mut self) -> Self {
+        T::setup(&mut self.world, &mut self.resources, &mut self.builder);
+        self
+    }
 
-        builder.resources.insert(ResumeApp::default());
-        log::debug!("resource loaded -> ResumeApp");
+    pub fn routine_fn<F>(mut self, mut f: F) -> Self
+    where
+        F: FnMut(&mut World, &mut Resources, &mut Builder),
+    {
+        f(&mut self.world, &mut self.resources, &mut self.builder);
+        self
+    }
 
-        builder.routine::<Graph>().routine::<Cam>()
+    pub fn build(self) -> App {
+        self.into()
     }
 }
 
-impl AppBuilder {
-    pub fn build(mut self, pool: usize) -> App {
-        App {
-            world: self.world,
-            resources: self.resources,
-            schedule: self.schedule.build(),
-            pool: rayon::ThreadPoolBuilder::new()
-                .num_threads(pool)
+impl From<AppBuilder> for App {
+    fn from(
+        AppBuilder {
+            world,
+            resources,
+            builder,
+            num_threads,
+        }: AppBuilder,
+    ) -> Self {
+        Self {
+            w: world,
+            r: resources,
+            s: builder.into(),
+            pool: ThreadPoolBuilder::new()
+                .num_threads(num_threads)
                 .build()
                 .unwrap(),
         }
@@ -53,44 +78,40 @@ impl AppBuilder {
 }
 
 pub struct App {
-    world: World,
-    resources: Resources,
-    schedule: Schedule,
-    pool: rayon::ThreadPool,
+    w: World,
+    r: Resources,
+    s: Schedule,
+    pool: ThreadPool,
 }
 
 impl App {
+    pub fn builder() -> AppBuilder {
+        AppBuilder::empty()
+    }
+
     pub fn run(&mut self) {
         log::info!("start");
 
-        while self
-            .resources
-            .get::<ResumeApp>()
-            .expect("resource `ResumeApp` is missing")
-            .resume()
-        {
-            self.schedule
-                .execute_in_thread_pool(&mut self.world, &mut self.resources, &self.pool);
+        while **get_expect::<ResumeApp>(&self.r) {
+            self.s
+                .execute_in_thread_pool(&mut self.w, &mut self.r, &self.pool);
         }
 
-        log::info!("halt")
+        log::info!("stop");
     }
 }
 
 pub trait Routine {
-    fn setup(world: &mut World, resources: &mut Resources, schedule: &mut Builder);
+    fn setup(w: &mut World, r: &mut Resources, b: &mut Builder);
 }
 
 /// A resource that decides whether
 /// the application should continue
 /// iterating before coming to a halt
-pub struct ResumeApp(bool);
+#[derive(Debug, shrinkwraprs::Shrinkwrap)]
+pub struct ResumeApp(pub bool);
 
 impl ResumeApp {
-    fn resume(&self) -> bool {
-        self.0
-    }
-
     pub fn end(&mut self) {
         self.0 = false;
     }

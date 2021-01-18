@@ -1,38 +1,69 @@
-/// Camera component
-pub mod camera;
-/// TODO: Fix this
-pub mod gfx;
-/// GPU instancing utils
-pub mod instance;
-/// Chunk to model data
-pub mod model;
-///
-pub mod routines;
-/// Render Pipeline Texture data
-pub mod texture;
-/// Render Pipeline Uniform data
-pub mod uniforms;
-/// Render Pipeline Vertex data
-pub mod vertex;
+mod internals;
+pub use internals::texture::Texture;
 
-pub use gfx::{swap_chain, Render, RenderBunch};
+mod camera;
+pub use camera::*;
 
-pub use image as img;
-pub use wgpu as gpu;
-pub use winit as win;
+pub use wgpu::BackendBit;
+pub use winit::{dpi::PhysicalSize, window::Window};
 
-use shrinkwraprs::Shrinkwrap;
+mod canvas;
+pub use canvas::*;
 
-#[derive(Debug, Clone, Copy, Shrinkwrap)]
-#[shrinkwrap(mutable)]
-pub struct DisplayFPS(pub f64);
+mod paint_brush;
+pub use paint_brush::*;
 
-impl Default for DisplayFPS {
-    fn default() -> Self {
-        Self(0.)
+use shrinkwraprs::*;
+#[derive(Debug, Clone, Copy)]
+/// Represents 2D screen dimensions and its aspect ratio.
+pub struct Resolution {
+    xy: (u32, u32),
+    ratio: f32,
+}
+
+impl Resolution {
+    pub fn update<T: Into<Resolution>>(&mut self, r: T) {
+        *self = r.into();
+    }
+
+    pub fn dimensions(&self) -> &'_ (u32, u32) {
+        &self.xy
+    }
+
+    pub fn aspect(&self) -> &'_ f32 {
+        &self.ratio
+    }
+}
+
+impl From<PhysicalSize<u32>> for Resolution {
+    fn from(size: PhysicalSize<u32>) -> Self {
+        Self {
+            xy: (size.width, size.height),
+            ratio: size.height as f32 / size.width as f32,
+        }
+    }
+}
+
+impl From<[u32; 2]> for Resolution {
+    fn from(xy: [u32; 2]) -> Self {
+        Self {
+            xy: (xy[0], xy[1]),
+            ratio: xy[0] as f32 / xy[1] as f32,
+        }
+    }
+}
+
+impl From<(u32, u32)> for Resolution {
+    fn from(xy: (u32, u32)) -> Self {
+        Self {
+            xy,
+            ratio: xy.0 as f32 / xy.1 as f32,
+        }
     }
 }
 
 #[derive(Debug, Clone, Copy, Shrinkwrap)]
 #[shrinkwrap(mutable)]
-pub struct DrawFrame(pub bool);
+/// Limit framerate to device specification.
+// TODO: don't forget this
+pub struct Vsync(pub bool);

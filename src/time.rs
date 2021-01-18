@@ -1,29 +1,26 @@
 use std::time::Instant;
 
-/// Use this to keep track of the delay between calls of a system;
-/// If you want interpolated values based from a specified sample size
-/// use `FpsCounter` instead.
+/// Use to keep track of delay, either for a
+/// `System`'s state or as a component of an `Entity`.
 #[derive(Debug, Clone, Copy)]
 pub struct DeltaTime(Instant);
 
 impl DeltaTime {
     /// Gets elapsed time since last call.
-    #[inline(always)]
     pub fn elapsed(&self) -> f64 {
         self.0.elapsed().as_secs_f64()
     }
 
-    /// Renews the instant for the next call;
-    /// Must be called at the last line of the system.
-    #[inline(always)]
-    pub fn flush(&mut self) {
-        self.0 = Instant::now();
-    }
-
-    /// Ticks per second
-    #[inline(always)]
+    /// Gets the tps of this frame based on the elapsed time.
     pub fn tps(&self) -> f64 {
         1.0e09 / self.elapsed()
+    }
+
+    /// Captures a new instant to refer to for the next call.
+    /// * For a system's state it should be called at the last line of the system.
+    /// * For a component, it should be called at the end of each iteration.
+    pub fn flush(&mut self) {
+        self.0 = Instant::now();
     }
 }
 
@@ -34,14 +31,15 @@ impl Default for DeltaTime {
 }
 
 #[derive(Debug)]
-pub struct FpsCounter {
+/// Counter that calculates the average tps over a collection of samples.
+pub struct TpsCounter {
     pub dt: DeltaTime,
     buf: CircularBuffer<f64>,
     sum: f64,
 }
 
-impl FpsCounter {
-    /// Creates a new FpsCounter that calculates the average fps over samplesize values.
+impl TpsCounter {
+    /// Create a new counter with a specified sample-size.
     pub fn new(samplesize: usize) -> Self {
         Self {
             dt: DeltaTime::default(),
@@ -50,8 +48,16 @@ impl FpsCounter {
         }
     }
 
-    /// Add a new delta time value.
-    /// Must be called in the first line of the system.
+    /// Get the average tps.
+    pub fn tps(&self) -> f64 {
+        if self.sum == 0. || self.buf.queue.is_empty() {
+            return 0.0;
+        }
+        self.buf.queue.len() as f64 / self.sum
+    }
+
+    /// Pushes a new delta time value.
+    /// Should be called in the first line of the system.
     pub fn update(&mut self) {
         let elem = self.dt.elapsed();
         self.sum += elem;
@@ -61,28 +67,18 @@ impl FpsCounter {
         }
     }
 
-    ///Get the average fps over the samplesize frames.
-    pub fn tps(&self) -> f64 {
-        if self.sum == 0. || self.buf.queue.is_empty() {
-            return 0.0;
-        }
-        /*1.0e9 */
-        self.buf.queue.len() as f64 / self.sum
-    }
-
-    /// Resets for recording a new time delta for the next call;
-    /// Must be called at the last line of the system.
-    #[inline(always)]
+    /// Captures a new instant to refer to for the next call.
+    /// Should be called at the last line of the system.
     pub fn flush(&mut self) {
         self.dt.flush();
     }
 }
 
-impl Default for FpsCounter {
+impl Default for TpsCounter {
     fn default() -> Self {
         Self {
             dt: DeltaTime::default(),
-            buf: CircularBuffer::new(32),
+            buf: CircularBuffer::new(16),
             sum: 0.,
         }
     }
@@ -96,7 +92,7 @@ struct CircularBuffer<T> {
 }
 
 impl<A> CircularBuffer<A> {
-    ///Creates a new CircularBuffer with fixed size
+    /// Creates a new CircularBuffer with fixed size.
     pub fn new(size: usize) -> Self {
         CircularBuffer {
             queue: VecDeque::with_capacity(size),
@@ -104,8 +100,8 @@ impl<A> CircularBuffer<A> {
         }
     }
 
-    ///Add a value to the CircularBuffer
-    ///Returns the popped value if the buffer is full
+    /// Add a value to the CircularBuffer.
+    /// Returns the popped value if the buffer is full.
     pub fn push(&mut self, elem: A) -> Option<A> {
         let out = if self.queue.len() == self.cap {
             //front to back <-> oldest to newest

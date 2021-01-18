@@ -1,7 +1,7 @@
 use bytemuck::{Pod, Zeroable};
+use wgpu::*;
 
-//use crate::graph::{gpu::*, texture, };
-use super::{gpu::*, texture, vertex::Vertex};
+use super::{texture, vertex::Vertex};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -83,4 +83,15 @@ where
         self.set_index_buffer(mesh.index_buffer.slice(..));
         self.draw_indexed(0..mesh.num_elements, 0, instances)
     }
+}
+
+use crate::chunk::*;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct ChunkSet<const N: usize, const O: usize> {
+    data: Chunk<Self, bool, N>,
+}
+
+impl<const N: usize, const O: usize> Accessor for ChunkSet<N, O> {
+    const SIDE_LEN: usize = O;
 }
