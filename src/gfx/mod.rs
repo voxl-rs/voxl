@@ -1,17 +1,12 @@
 mod internals;
 pub use internals::texture::Texture;
 
-mod camera;
-pub use camera::*;
+pub mod camera;
+pub mod canvas;
+pub mod paint_brush;
 
 pub use wgpu::BackendBit;
 pub use winit::{dpi::PhysicalSize, window::Window};
-
-mod canvas;
-pub use canvas::*;
-
-mod paint_brush;
-pub use paint_brush::*;
 
 use shrinkwraprs::*;
 #[derive(Debug, Clone, Copy)]

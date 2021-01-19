@@ -66,7 +66,7 @@ pub mod ecs {
 pub mod input_event {
     use std::any::TypeId;
 
-    use crate::gfx::WindowMarker;
+    use crate::gfx::canvas::CanvasTag;
     pub use winit::{
         event::{ElementState, KeyboardInput, VirtualKeyCode},
         window::WindowId,
@@ -76,38 +76,43 @@ pub mod input_event {
     #[non_exhaustive]
     /// Represents all possible inputs.
     pub enum Input {
+        /// A key
         Key { id: TypeId, keystate: KeyState },
+        /// A character
         Char { id: TypeId, character: char },
+        /// A cursor position on a canvas.
         CursorPosition(f64, f64),
+        /// Mouse movement.
         MouseDelta(f64, f64),
+        /// Mouse wheel movement
         MouseWheelDelta(f64, f64),
     }
 
     /// A Key input with its corresponding state.
     #[derive(Debug, Clone, Copy, PartialEq)]
     pub enum KeyState {
-        /// Key was pressed in a frame
+        /// Key was pressed in a frame.
         Pressed(VirtualKeyCode),
-        /// Key was pressed for `more than*` a frame
+        /// Key was pressed for `more than*` a frame.
         Held(VirtualKeyCode),
-        /// Key was released
+        /// Key was released.
         Released(VirtualKeyCode),
-        /// Key was any of the three
-        Any(VirtualKeyCode),
+        /// Key was any of the three.
+        Any(VirtualKeyCode), // Should this be removed?
     }
 
     impl Input {
-        /// Retrive a key input from a particular window.
-        pub fn key_win<W: WindowMarker>(&self) -> Option<KeyState> {
+        /// Returns a `KeyState` if it's a `Key` that belongs to a specified canvas.
+        pub fn key_win<C: CanvasTag>(&self) -> Option<KeyState> {
             if let Input::Key { id, keystate } = *self {
-                if TypeId::of::<W>() == id {
+                if TypeId::of::<C>() == id {
                     return Some(keystate);
                 }
             }
             None
         }
 
-        /// Retrive a keystate.
+        /// Returns a KeyState if it's a `Key`.
         pub fn key(&self) -> Option<KeyState> {
             if let Input::Key { id: _, keystate } = *self {
                 return Some(keystate);
@@ -117,30 +122,33 @@ pub mod input_event {
     }
 }
 
+/// Events and some utility methods.
 pub mod events {
-    use self::Event;
     use super::ecs::Resources;
     use std::any::type_name;
 
+    use self::Event;
     pub use shrev::*;
 
     /// Inserts an event channel to `Resources`.
-    pub fn new_channel<T: Event>(resources: &mut Resources) {
-        resources.insert(EventChannel::<T>::with_capacity(32));
-        log::debug!("event channel `{}` instanced", type_name::<T>());
+    pub fn new_channel<E: Event>(resources: &mut Resources) {
+        resources.insert(EventChannel::<E>::with_capacity(64));
+        log::trace!("event channel `{}` created", type_name::<E>());
     }
 
-    /// Registers a reader from an EventChannel already present in `Resources`.
-    pub fn subscribe<T: Event>(resources: &mut Resources) -> ReaderId<T> {
+    /// Retrieves a `ReaderId<T>` from an `EventChannel` from `Resources`.
+    /// ## Panics
+    /// Make sure that the event channel exists!
+    pub fn subscribe<E: Event>(resources: &mut Resources) -> ReaderId<E> {
         let id = resources
-            .get_mut::<EventChannel<T>>()
+            .get_mut::<EventChannel<E>>()
             .expect(&format!(
                 "`EventChannel<{}>` is not present in `Resources`",
-                type_name::<T>()
+                type_name::<E>()
             ))
             .register_reader();
 
-        log::debug!("subscribed to `{}` event channel", type_name::<T>());
+        log::trace!("subscribed to `{}` event channel", type_name::<E>());
         id
     }
 }

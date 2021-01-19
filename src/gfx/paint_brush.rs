@@ -1,4 +1,4 @@
-use super::CanvasMeta;
+use super::canvas::CanvasMeta;
 use wgpu::*;
 use winit::{event_loop::EventLoop, window::WindowBuilder};
 
@@ -10,12 +10,13 @@ pub struct PaintBrush {
 }
 
 impl PaintBrush {
+    /// Sends a sequence of command buffers to the command queue.
     pub fn submit_commands(&self, commands: Vec<CommandBuffer>) {
         self.queue.submit(commands);
     }
 
     pub fn create_depth_texture(&self, cvm: &CanvasMeta) -> super::Texture {
-        super::Texture::create_depth_texture(&self.device, &cvm.sc_desc(), Some("Depth Texture"))
+        super::Texture::create_depth_texture(&self.device, &cvm.sc_desc, "Depth Texture")
     }
 
     pub fn new(instance: &Instance) -> Self {
@@ -59,7 +60,7 @@ impl PaintBrush {
             }
         }
 
-        *sw = self.device.create_swap_chain(cvm.surface(), cvm.sc_desc());
+        *sw = self.device.create_swap_chain(&cvm.surface, &cvm.sc_desc);
         log::debug!("recreated swap chain");
 
         self._frame(sw, cvm)

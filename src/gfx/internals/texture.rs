@@ -15,7 +15,7 @@ impl Texture {
     pub fn create_depth_texture(
         device: &Device,
         sc_desc: &SwapChainDescriptor,
-        label: Option<&str>,
+        label: &'static str,
     ) -> Self {
         let size = Extent3d {
             width: sc_desc.width,
@@ -24,7 +24,7 @@ impl Texture {
         };
 
         let desc = TextureDescriptor {
-            label,
+            label: Some(label),
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -34,7 +34,9 @@ impl Texture {
         };
 
         let texture = device.create_texture(&desc);
+
         let view = texture.create_view(&TextureViewDescriptor::default());
+
         let sampler = device.create_sampler(&SamplerDescriptor {
             address_mode_u: AddressMode::ClampToEdge,
             address_mode_v: AddressMode::ClampToEdge,

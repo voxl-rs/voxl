@@ -22,7 +22,7 @@ impl AppBuilder {
         log::debug!("`ResumeApp` pushed to `Resources`");
 
         #[cfg(feature = "gui")]
-        super::gfx::window_event_routine(&mut world, &mut resources, &mut builder);
+        super::gfx::canvas::event_routine(&mut world, &mut resources, &mut builder);
 
         Self {
             world,
