@@ -27,15 +27,15 @@ impl Projection {
         use Project3D::*;
         match self.projection {
             Perspective => {
-                let aspect = res.aspect();
-                let &Self {
+                let aspect = *res.aspect();
+                let Self {
                     fov_y,
                     z_near,
                     z_far,
                     ..
-                } = self;
+                } = *self;
 
-                perspective(fov_y, *aspect, z_near, z_far)
+                perspective(fov_y, aspect, z_near, z_far)
             }
 
             Orthographic => {
