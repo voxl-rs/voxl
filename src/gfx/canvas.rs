@@ -4,10 +4,10 @@ use crate::{
             systems::{Builder, Runnable},
             *,
         },
-        events::{new_channel, EventChannel},
+        events::{new_channel, subscribe, EventChannel},
         input_event::*,
     },
-    gfx::{PaintBrush, Resolution},
+    gfx::{paint_brush::PaintBrush, Resolution},
     time::TpsCounter,
 };
 
@@ -29,33 +29,29 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
+#[cfg(feature = "default-window")]
+#[derive(Debug)]
+pub struct DefaultWindow;
+impl CanvasTag for DefaultWindow {}
+
 /// Describes a Canvas.
 #[derive(Debug)]
 pub struct CanvasMeta {
     pub clear_color: Color,
-    surface: Surface,
-    sc_desc: SwapChainDescriptor,
+    pub surface: Surface,
+    pub sc_desc: SwapChainDescriptor,
 }
 
 impl CanvasMeta {
-    pub fn surface(&self) -> &'_ Surface {
-        &self.surface
-    }
-
-    pub fn sc_desc(&self) -> &'_ SwapChainDescriptor {
-        &self.sc_desc
-    }
-
-    pub fn resize(&mut self, res: &Resolution) {
-        let (x, y) = *res.dimensions();
-        self.sc_desc.width = x;
-        self.sc_desc.height = y;
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.sc_desc.width = width;
+        self.sc_desc.height = height;
     }
 }
 
 /// Represents a drawable window.
 #[derive(Debug)]
-pub struct Canvas<T: WindowMarker> {
+pub struct Canvas<T: CanvasTag> {
     pub resolution: Resolution,
     pub meta: CanvasMeta,
     window_handle: Window,
@@ -67,6 +63,16 @@ pub struct Canvas<T: WindowMarker> {
 pub struct CanvasUpdate {
     id: TypeId,
     update: UpdateKind,
+}
+
+impl CanvasUpdate {
+    /// Unwraps the `CanvasUpdate` if it belongs to a specified canvas.
+    fn is_win<T: CanvasTag>(&self) -> Option<UpdateKind> {
+        if self.id == TypeId::of::<T>() {
+            return Some(self.update);
+        }
+        None
+    }
 }
 
 /// A kind of update for a Canvas
@@ -83,38 +89,37 @@ pub enum UpdateKind {
 #[shrinkwrap(mutable)]
 pub struct FpsCounter(pub TpsCounter);
 
-impl<T: WindowMarker> Canvas<T> {
-    /// An event listener for resizing canvas dimensions.
-    pub fn update_system(id: ReaderId<CanvasUpdate>) -> impl Runnable {
+impl<C: CanvasTag> Canvas<C> {
+    /// An `System` for updating Canvas through Window events.
+    pub fn update_system(&self, id: ReaderId<CanvasUpdate>) -> impl Runnable {
         let mut reader_id = id;
-        let type_id = TypeId::of::<T>();
-        let sys_name = format!("Canvas{}System", type_name::<T>());
+        let sys_name = format!("Canvas{}System", type_name::<C>());
 
         SystemBuilder::new(sys_name)
-            .write_resource::<Canvas<T>>()
+            .write_resource::<Canvas<C>>()
             .read_resource::<EventChannel<CanvasUpdate>>()
             .build(move |_, _, (canvas, updates), _| {
                 updates
                     .read(&mut reader_id)
-                    .filter_map(|u| {
-                        if u.id == type_id {
-                            return Some(u.update);
-                        }
-                        None
-                    })
+                    .filter_map(|u| u.is_win::<C>())
                     .for_each(|u| match u {
                         UpdateKind::Resize(resolution) => {
-                            canvas.meta.resize(&resolution);
+                            let (width, height) = resolution.xy;
+                            canvas.meta.resize(width, height);
                             canvas.resolution = resolution;
                         }
-                        UpdateKind::Quit => {}
+
+                        UpdateKind::Quit => {
+                            // TODO: Create a configurable Scheduling
+                            // application architecture to cater this.
+                        }
                     })
             })
     }
 }
 
 /// A compile-time unique identifier for a canvas.
-pub trait WindowMarker: Debug + 'static {}
+pub trait CanvasTag: Debug + 'static {}
 
 #[derive(Debug)]
 /// A resource for spawning [`Canvas`](Canvas)s.
@@ -135,12 +140,12 @@ impl WindowEventLoop {
     /// ## Panics
     /// You can only use a window marker
     /// type once ever, otherwise it will panic.
-    pub fn new_canvas<T, F>(&mut self, f: F) -> Canvas<T>
+    pub fn new_canvas<C, F>(&mut self, f: F) -> Canvas<C>
     where
-        T: WindowMarker,
+        C: CanvasTag,
         F: Fn(WindowBuilder) -> WindowBuilder,
     {
-        let type_id = TypeId::of::<T>();
+        let type_id = TypeId::of::<C>();
 
         self.map.values().find(|&&v| v == type_id).expect_none(
             "you cannot create a new canvas \
@@ -205,8 +210,22 @@ impl Default for WindowEventLoop {
 
 /// Adds all the features of window_event_system, resizing_system, and drawing_system.
 #[doc(cfg(feature = "gui"))]
-pub fn window_event_routine(_: &mut World, r: &mut Resources, b: &mut Builder) {
+pub fn event_routine(_: &mut World, r: &mut Resources, b: &mut Builder) {
     b.add_thread_local(window_event_system(r));
+
+    #[cfg(feature = "default-window")]
+    {
+        let main_window: Canvas<DefaultWindow> = {
+            r.get_mut::<WindowEventLoop>()
+                .expect("weloop is missing")
+                .new_canvas(|w| w.with_title("voxl window"))
+        };
+
+        let id: ReaderId<CanvasUpdate> = subscribe(r);
+
+        b.add_system(main_window.update_system(id));
+        r.insert(main_window);
+    }
 }
 
 /// Returns a `System` that manages window associated data,
@@ -252,6 +271,8 @@ fn window_event_system(r: &mut Resources) -> impl Runnable {
                             if let Some(&id) = map.get(&window_id) {
                                 match event {
                                     WindowEvent::CloseRequested | WindowEvent::Destroyed => {
+                                        map.remove(&window_id);
+
                                         let update = UpdateKind::Quit;
                                         canvas_channel.single_write(CanvasUpdate { id, update });
                                     }
