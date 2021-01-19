@@ -16,9 +16,11 @@ keywords = ["game engine", "voxels", "3D"]
 #proc-macro = true
 
 [features]
-default = ["gui"]
+default = ["gui", "default-window"]
 
+default-window = ["gui"]
 gui = ["winit", "wgpu", "image"]
+
 serialize = ["serde", "legion/serialize"]
 
 [dependencies]
@@ -29,6 +31,7 @@ log = "0.4"
 legion = { version = "0.3", default-features = false, features = [ "parallel" ] }
 # Events
 shrev = "1.1"
+# crossbeam-channel = "0.5"
 rayon = "1.5"
 evmap = "10.0"
 
@@ -44,13 +47,13 @@ futures = "0.3"
 bytemuck = "1.4"
 
 # Math
-cgmath = "0.17"
-nalgebra = "0.23"
+cgmath = "0.18"
+nalgebra = "0.24"
 noice = "0.7"
 
 # Utils
 anyhow = "1.0"
-rand = "0.7"
+rand = "0.8"
 shrinkwraprs = "0.3"
 
 [dev-dependencies]
