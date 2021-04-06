@@ -1,10 +1,7 @@
-// #![feature(min_const_generics)]
 #![feature(doc_cfg)]
 #![feature(option_expect_none)]
-#![feature(or_patterns)]
 
 pub mod app;
-// pub mod chunk;
 pub mod core;
 pub mod gfx;
 pub mod time;
