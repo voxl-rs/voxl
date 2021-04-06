@@ -5,15 +5,13 @@ edition = "2018"
 description = "An engine for voxel games"
 license-file = "LICENSE"
 readme = "README.md"
-authors = ["Senre <jesuisutile0@gmail.com>"]
+authors = ["Lara19-dev <jesuisutile0@gmail.com>"]
 homepage = "https://github.com/voxl-rs/voxl"
 repository = "https://github.com/voxl-rs/voxl.git"
 documentation = "https://docs.rs/voxl"
 keywords = ["game engine", "voxels", "3D"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-#[lib]
-#proc-macro = true
 
 [features]
 default = ["gui", "default-window"]
@@ -29,9 +27,7 @@ log = "0.4"
 
 # Core
 legion = { version = "0.3", default-features = false, features = [ "parallel" ] }
-# Events
 shrev = "1.1"
-# crossbeam-channel = "0.5"
 rayon = "1.5"
 evmap = "10.0"
 
@@ -44,7 +40,7 @@ wgpu = { version = "0.6", optional = true }
 image = { version = "0.23", optional = true }
 
 futures = "0.3"
-bytemuck = "1.4"
+bytemuck = { version = "1.4", features = ["derive"] }
 
 # Math
 cgmath = "0.18"
@@ -64,10 +60,6 @@ shaderc = "0.7"
 fs_extra = "1.2"
 glob = "0.3"
 anyhow = "1.0"
-
-[[bench]]
-name = "my_bench"
-harness = false
 
 [profile.dev.package."*"]
 opt-level = 3
